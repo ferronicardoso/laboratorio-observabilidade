@@ -1,0 +1,37 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  # Prometheus monitora ele mesmo
+  - job_name: prometheus
+    static_configs:
+      - targets: ["prometheus:9090"]
+
+  # Métricas do Nginx via exporter
+  - job_name: nginx
+    static_configs:
+      - targets: ["nginx-exporter:9113"]
+
+  # Métricas da API .NET com OpenTelemetry
+  - job_name: dotnet-api
+    static_configs:
+      - targets: ["dotnet-api:8080"]
+    metrics_path: '/metrics'
+
+  # Métricas da API Python (FastAPI) com OpenTelemetry
+  - job_name: python-api
+    static_configs:
+      - targets: ["python-api:8000"]
+    metrics_path: '/metrics'
+
+  # Métricas da API Java (Spring Boot) com Micrometer
+  - job_name: java-api
+    static_configs:
+      - targets: ["java-api:8080"]
+    metrics_path: '/actuator/prometheus'
+
+  # Métricas do Next.js com prom-client
+  - job_name: nextjs-app
+    static_configs:
+      - targets: ["nextjs-app:3000"]
+    metrics_path: '/api/metrics'

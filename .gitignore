@@ -1,0 +1,32 @@
+# Docker
+docker-compose.override.yml
+.env
+
+# Logs
+*.log
+logs/
+observability/nginx/logs/*.log
+observability/loki/loki-data/
+observability/loki/loki-wal/
+
+# Prometheus data
+observability/prometheus/prometheus-data/
+
+# Grafana data (volumes são gerenciados pelo Docker)
+grafana-data/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporários
+*.tmp
+*.temp
+.cache/

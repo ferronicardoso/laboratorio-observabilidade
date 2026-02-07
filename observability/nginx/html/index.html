@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Laboratório de Observabilidade</title>
+
+  <style>
+    :root{
+      --green: #1f7a3f;
+      --green-soft: rgba(31,122,63,.15);
+      --yellow: #f4c430;
+      --yellow-soft: rgba(244,196,48,.18);
+      --blue: #0a3d62;
+      --blue-soft: rgba(10,61,98,.22);
+
+      --bg: #0b1a14;
+      --card: rgba(255,255,255,.06);
+      --border: rgba(255,255,255,.14);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+
+      --radius: 18px;
+      --shadow: 0 20px 55px rgba(0,0,0,.45);
+
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+
+    *{ box-sizing: border-box; }
+
+    body{
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(900px 500px at 10% 10%, var(--green-soft), transparent 60%),
+        radial-gradient(800px 500px at 90% 20%, var(--yellow-soft), transparent 60%),
+        radial-gradient(900px 600px at 50% 100%, var(--blue-soft), transparent 65%),
+        var(--bg);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .container{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 20px 56px;
+    }
+
+    header{
+      margin-bottom: 32px;
+    }
+
+    header h1{
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: .3px;
+    }
+
+    header p{
+      margin: 6px 0 0;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .card{
+      background: linear-gradient(180deg, var(--card), rgba(255,255,255,.03));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px;
+      box-shadow: var(--shadow);
+      margin-bottom: 22px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card h2{
+      margin: 0 0 12px;
+      font-size: 20px;
+      letter-spacing: .2px;
+    }
+
+    .card p{
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .grid{
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .item{
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      background: rgba(255,255,255,.04);
+    }
+
+    .item h3{
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    .item p{
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    footer{
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,.18);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: rgba(255,255,255,.6);
+    }
+
+    @media (max-width: 900px){
+      .grid{ grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 520px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <header>
+      <h1>Laboratório de Observabilidade</h1>
+      <p>Ambiente de estudos e experimentação</p>
+    </header>
+
+    <section class="card">
+      <h2>Sobre o laboratório</h2>
+      <p>
+        Este laboratório foi criado para apoiar o aprendizado prático em observabilidade,
+        explorando conceitos, arquiteturas e boas práticas relacionadas à análise do
+        comportamento de sistemas e aplicações.
+      </p>
+      <p>
+        O ambiente permite testes controlados, validação de configurações e entendimento
+        mais profundo sobre como os sistemas se comportam em diferentes cenários.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Tecnologias em estudo</h2>
+      <div class="grid">
+        <div class="item">
+          <h3>Grafana</h3>
+          <p>Visualização, dashboards, alertas e correlação entre diferentes fontes de dados.</p>
+        </div>
+        <div class="item">
+          <h3>Prometheus</h3>
+          <p>Coleta e consulta de métricas baseadas em time series.</p>
+        </div>
+        <div class="item">
+          <h3>Loki</h3>
+          <p>Armazenamento e consulta de logs com baixo custo operacional.</p>
+        </div>
+        <div class="item">
+          <h3>Alloy</h3>
+          <p>Agente unificado para coleta, processamento e envio de telemetria.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- NOVOS CARDS -->
+
+    <section class="card">
+      <h2>Elementos de observabilidade</h2>
+      <div class="grid">
+        <div class="item">
+          <h3>Métricas</h3>
+          <p>
+            Representam dados numéricos ao longo do tempo, permitindo análise de desempenho,
+            capacidade e disponibilidade.
+          </p>
+        </div>
+        <div class="item">
+          <h3>Logs</h3>
+          <p>
+            Registros detalhados de eventos que ajudam a entender o comportamento interno
+            das aplicações.
+          </p>
+        </div>
+        <div class="item">
+          <h3>Traces</h3>
+          <p>
+            Permitem acompanhar uma requisição ponta a ponta em sistemas distribuídos.
+          </p>
+        </div>
+        <div class="item">
+          <h3>Eventos</h3>
+          <p>
+            Mudanças relevantes no ambiente, como deploys, falhas ou alterações de configuração.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Conceitos explorados</h2>
+      <div class="grid">
+        <div class="item">
+          <h3>Cardinalidade</h3>
+          <p>
+            Impacto do uso excessivo de labels e dimensões em métricas e logs.
+          </p>
+        </div>
+        <div class="item">
+          <h3>Correlação</h3>
+          <p>
+            Relacionamento entre métricas, logs e traces para investigação de incidentes.
+          </p>
+        </div>
+        <div class="item">
+          <h3>Alertas</h3>
+          <p>
+            Criação de alertas baseados em sintomas reais e não apenas em thresholds fixos.
+          </p>
+        </div>
+        <div class="item">
+          <h3>Confiabilidade</h3>
+          <p>
+            Avaliação contínua da saúde dos sistemas e da experiência do usuário.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Objetivo</h2>
+      <p>
+        Desenvolver maturidade técnica em observabilidade, promovendo melhor entendimento
+        sobre disponibilidade, desempenho e confiabilidade dos sistemas.
+      </p>
+    </section>
+
+    <footer>
+      <span>© Raphael Augusto Ferroni Cardoso</span>
+      <span>Laboratório de Observabilidade</span>
+    </footer>
+
+  </div>
+</body>
+</html>
