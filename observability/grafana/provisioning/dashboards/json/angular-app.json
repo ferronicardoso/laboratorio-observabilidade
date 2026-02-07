@@ -23,8 +23,8 @@
   "panels": [
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "Prometheus"
+        "type": "loki",
+        "uid": "Loki"
       },
       "fieldConfig": {
         "defaults": {
@@ -34,18 +34,36 @@
           "mappings": [
             {
               "options": {
-                "0": {
+                "match": "empty",
+                "result": {
                   "color": "dark-red",
                   "index": 1,
                   "text": "DOWN"
-                },
-                "1": {
+                }
+              },
+              "type": "special"
+            },
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "dark-red",
+                  "index": 2,
+                  "text": "DOWN"
+                }
+              },
+              "type": "special"
+            },
+            {
+              "options": {
+                "pattern": ".*",
+                "result": {
                   "color": "dark-green",
                   "index": 0,
                   "text": "UP"
                 }
               },
-              "type": "value"
+              "type": "regex"
             }
           ],
           "thresholds": {
@@ -53,11 +71,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
+                "value": null
               }
             ]
           }
@@ -92,17 +106,16 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "Prometheus"
+            "type": "loki",
+            "uid": "Loki"
           },
           "editorMode": "builder",
-          "expr": "up{job=\"nextjs-app\"}",
-          "legendFormat": "__auto",
-          "range": true,
+          "expr": "{job=\"angular-app\"}",
+          "queryType": "instant",
           "refId": "A"
         }
       ],
-      "title": "Status da Aplicação Next.js",
+      "title": "Status da Aplicação Angular",
       "type": "stat"
     },
     {
@@ -134,12 +147,12 @@
             "uid": "Loki"
           },
           "editorMode": "builder",
-          "expr": "{job=\"nextjs-app\"}",
+          "expr": "{job=\"angular-app\"}",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Logs do Next.js",
+      "title": "Logs do Angular (Nginx)",
       "type": "logs"
     }
   ],
@@ -156,7 +169,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "NEXTJS - Laboratório de Observabilidade",
-  "uid": "nextjs-observability",
+  "title": "ANGULAR - Laboratório de Observabilidade",
+  "uid": "angular-observability",
   "version": 1
 }
