@@ -13,6 +13,12 @@ var forecastCounter = meter.CreateCounter<long>("weather_forecast_generated_tota
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+// Adicionar HTTP Logging
+builder.Services.AddHttpLogging(logging =>
+{
+    logging.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.All;
+});
+
 // Configurar OpenTelemetry para métricas
 builder.Services.AddOpenTelemetry()
     .WithMetrics(metrics =>
@@ -34,6 +40,8 @@ builder.Services.AddOpenTelemetry()
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseHttpLogging();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

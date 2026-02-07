@@ -206,6 +206,42 @@
         "type": "loki",
         "uid": "Loki"
       },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 50
+      },
+      "id": 7,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "12.3.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "expr": "{job=\"nginx\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "Nginx - Logs",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -261,7 +297,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 60
       },
       "id": 5,
       "options": {
@@ -284,8 +320,8 @@
             "type": "loki",
             "uid": "Loki"
           },
-          "expr": "rate({container=~\"dotnet-api|python-api|java-api|nextjs-app|angular-app\"}[1m])",
-          "legendFormat": "{{container}}",
+          "expr": "rate({container=~\"dotnet-api|python-api|java-api|nextjs-app|angular-app\"}[1m]) or rate({job=\"nginx\"}[1m])",
+          "legendFormat": "{{container}}{{job}}",
           "refId": "A"
         }
       ],

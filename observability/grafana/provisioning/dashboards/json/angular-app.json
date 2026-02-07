@@ -110,7 +110,7 @@
             "uid": "Loki"
           },
           "editorMode": "builder",
-          "expr": "{job=\"angular-app\"}",
+          "expr": "count_over_time({container=\"angular-app\"}[5m])",
           "queryType": "instant",
           "refId": "A"
         }
