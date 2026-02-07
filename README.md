@@ -312,6 +312,21 @@ docker compose up -d
 docker compose ps
 ```
 
+### 3. Configuração Automática
+
+O Grafana está configurado com **provisioning automático**, o que significa que ao subir, ele já cria automaticamente:
+
+✅ **Datasources:**
+- Prometheus (métricas)
+- Loki (logs)
+
+✅ **Dashboards:**
+- Lab Observabilidade - Overview (visão geral de todas as APIs)
+- Angular - Real User Monitoring (RUM do frontend)
+- Nginx - Logs (logs de acesso e erro do Nginx)
+
+**Não é necessário configurar manualmente!** Basta acessar o Grafana e os dashboards já estarão prontos.
+
 **Você deve ver 10 containers:**
 - ✅ nginx
 - ✅ nginx-exporter
@@ -600,6 +615,16 @@ lab-observabilidade/
 │   │   └── loki-config.yml       # Config do Loki
 │   ├── alloy/
 │   │   └── config.alloy          # Config do Alloy (logs + RUM)
+│   ├── grafana/
+│   │   └── provisioning/         # Provisioning automático
+│   │       ├── datasources/
+│   │       │   └── datasources.yml
+│   │       └── dashboards/
+│   │           ├── dashboards.yml
+│   │           └── json/
+│   │               ├── overview.json
+│   │               ├── angular-rum.json
+│   │               └── nginx-logs.json
 │   ├── grafana/                  # Dashboards (provisioning)
 │   └── nginx/
 │       ├── nginx.conf            # Config do Nginx

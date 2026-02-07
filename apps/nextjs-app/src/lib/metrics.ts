@@ -1,4 +1,7 @@
-import { Counter, Gauge, register } from 'prom-client'
+import { Counter, Gauge, register, collectDefaultMetrics } from 'prom-client'
+
+// Habilitar métricas padrão (CPU, memória, etc.)
+collectDefaultMetrics({ register })
 
 // Métricas customizadas
 export const tasksCreatedCounter = new Counter({

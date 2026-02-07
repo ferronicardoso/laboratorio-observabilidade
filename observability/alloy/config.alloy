@@ -26,3 +26,52 @@ loki.source.file "nginx_logs" {
 
   forward_to = [loki.write.local.receiver]
 }
+
+// Receiver HTTP para Grafana Faro (RUM)
+faro.receiver "frontend" {
+  server {
+    listen_address = "0.0.0.0"
+    listen_port    = 12347
+    cors_allowed_origins = ["*"]
+  }
+
+  output {
+    logs   = [loki.write.local.receiver]
+  }
+}
+
+// Coleta logs dos containers Docker (APIs)
+loki.source.docker "api_logs" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.api_containers.targets
+  forward_to = [loki.relabel.api_logs.receiver]
+}
+
+// Relabel para adicionar labels úteis
+loki.relabel "api_logs" {
+  forward_to = [loki.write.local.receiver]
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    target_label  = "container_name"
+    regex         = "/(.*)"
+    replacement   = "$1"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    target_label  = "job"
+    regex         = "/(.*)"
+    replacement   = "$1"
+  }
+}
+
+// Descobre containers Docker das APIs
+discovery.docker "api_containers" {
+  host = "unix:///var/run/docker.sock"
+
+  filter {
+    name   = "name"
+    values = ["dotnet-api", "python-api", "java-api", "nextjs-app", "angular-app"]
+  }
+}
