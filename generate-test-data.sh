@@ -47,6 +47,13 @@ sleep 2
 echo ""
 
 # ==========================================
+# NGINX
+# ==========================================
+echo -e "${BLUE}>>> NGINX (porta 8080)${NC}"
+make_request "GET" "http://localhost:8080" "" "NGINX - Página Inicial"
+echo ""
+
+# ==========================================
 # .NET API
 # ==========================================
 echo -e "${BLUE}>>> .NET API (porta 5000)${NC}"
@@ -109,6 +116,7 @@ if [ "$1" = "--loop" ]; then
         echo -e "${BLUE}[$(date '+%H:%M:%S')] Gerando nova rodada de dados...${NC}"
 
         # Requisições aleatórias
+        make_request "GET" "http://localhost:8080" "" "NGINX - Página Inicial"
         make_request "GET" "http://localhost:5000/weatherforecast" "" ".NET"
         make_request "GET" "http://localhost:8001/items" "" "Python"
         make_request "GET" "http://localhost:8002/api/products" "" "Java"
