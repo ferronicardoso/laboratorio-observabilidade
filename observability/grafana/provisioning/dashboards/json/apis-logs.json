@@ -50,7 +50,7 @@
             "type": "loki",
             "uid": "Loki"
           },
-          "expr": "{container_name=\"dotnet-api\"}",
+          "expr": "{container=\"dotnet-api\"}",
           "refId": "A"
         }
       ],
@@ -86,7 +86,7 @@
             "type": "loki",
             "uid": "Loki"
           },
-          "expr": "{container_name=\"python-api\"}",
+          "expr": "{container=\"python-api\"}",
           "refId": "A"
         }
       ],
@@ -122,7 +122,7 @@
             "type": "loki",
             "uid": "Loki"
           },
-          "expr": "{container_name=\"java-api\"}",
+          "expr": "{container=\"java-api\"}",
           "refId": "A"
         }
       ],
@@ -158,11 +158,47 @@
             "type": "loki",
             "uid": "Loki"
           },
-          "expr": "{container_name=\"nextjs-app\"}",
+          "expr": "{container=\"nextjs-app\"}",
           "refId": "A"
         }
       ],
       "title": "Next.js App - Logs",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "id": 6,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "12.3.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "expr": "{container=\"angular-app\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "Angular App - Logs",
       "type": "logs"
     },
     {
@@ -225,7 +261,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 50
       },
       "id": 5,
       "options": {
@@ -248,8 +284,8 @@
             "type": "loki",
             "uid": "Loki"
           },
-          "expr": "rate({container_name=~\"dotnet-api|python-api|java-api|nextjs-app\"}[1m])",
-          "legendFormat": "{{container_name}}",
+          "expr": "rate({container=~\"dotnet-api|python-api|java-api|nextjs-app|angular-app\"}[1m])",
+          "legendFormat": "{{container}}",
           "refId": "A"
         }
       ],

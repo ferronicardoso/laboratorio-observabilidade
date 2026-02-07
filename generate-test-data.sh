@@ -51,6 +51,14 @@ echo ""
 # ==========================================
 echo -e "${BLUE}>>> NGINX (porta 8080)${NC}"
 make_request "GET" "http://localhost:8080" "" "NGINX - Página Inicial"
+make_request "GET" "http://localhost:8080/not-found" "" "NGINX - Not Found"
+echo ""
+
+# ==========================================
+# ANGULAR
+# ==========================================
+echo -e "${BLUE}>>> ANGULAR (porta 4200)${NC}"
+make_request "GET" "http://localhost:4200" "" "ANGULAR - Página Inicial"
 echo ""
 
 # ==========================================
@@ -94,6 +102,7 @@ echo ""
 # Next.js API
 # ==========================================
 echo -e "${BLUE}>>> Next.js API (porta 3001)${NC}"
+make_request "GET" "http://localhost:3001" "" "Next.js - Página Inicial"
 make_request "GET" "http://localhost:3001/api/health" "" "Next.js - Health Check"
 make_request "POST" "http://localhost:3001/api/tasks" '{"title":"Implementar observabilidade","completed":false}' "Next.js - Criar Tarefa 1"
 make_request "POST" "http://localhost:3001/api/tasks" '{"title":"Criar dashboards no Grafana","completed":false}' "Next.js - Criar Tarefa 2"
@@ -121,6 +130,8 @@ if [ "$1" = "--loop" ]; then
         make_request "GET" "http://localhost:8001/items" "" "Python"
         make_request "GET" "http://localhost:8002/api/products" "" "Java"
         make_request "GET" "http://localhost:3001/api/tasks" "" "Next.js"
+        make_request "GET" "http://localhost:3001" "" "Next.js - Página Inicial"
+        make_request "GET" "http://localhost:4200" "" "ANGULAR - Página Inicial"
         echo ""
     done
 fi
