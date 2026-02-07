@@ -37,13 +37,15 @@ O projeto implementa uma stack completa de observabilidade usando ferramentas op
 ### 🌟 Destaques
 
 - ✅ **4 APIs em diferentes linguagens** instrumentadas para observabilidade
-- ✅ **Frontend Next.js** moderno com métricas
-- ✅ **Stack Grafana completa** (Prometheus, Loki, Alloy, Grafana)
+- ✅ **Frontend Next.js** moderno com métricas backend
+- ✅ **Frontend Angular** com Real User Monitoring (Grafana Faro)
+- ✅ **Stack Grafana completa** (Prometheus, Loki, Alloy, Grafana, Faro)
 - ✅ **OpenTelemetry** para padronização
 - ✅ **Dashboards customizados** no Grafana
 - ✅ **Docker Compose** para fácil execução
 - ✅ **Métricas customizadas** em todas as aplicações
 - ✅ **Coleta de logs** centralizada com Loki
+- ✅ **Monitoramento de experiência do usuário** com Core Web Vitals
 
 ---
 
@@ -94,46 +96,54 @@ Este laboratório foi criado para ensinar:
 
 ## 🏗️ Arquitetura
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                    GRAFANA (porta 3000)                       │
-│               Interface de Visualização                       │
-│  ┌─────────────────┐          ┌─────────────────┐           │
-│  │  Prometheus DS  │          │    Loki DS      │           │
-│  │  (Métricas)     │          │    (Logs)       │           │
-│  └────────┬────────┘          └────────┬────────┘           │
-└───────────┼─────────────────────────────┼────────────────────┘
-            │                             │
-   ┌────────▼────────┐            ┌───────▼──────┐
-   │  PROMETHEUS     │            │    LOKI      │
-   │  (porta 9090)   │            │ (porta 3100) │
-   │  - Time series  │            │  - Log store │
-   │  - PromQL       │            │  - LogQL     │
-   │  - Alerting     │            │  - Labels    │
-   └────────▲────────┘            └───────▲──────┘
-            │                             │
-            │ (scrape)                    │ (push)
-            │                             │
-   ┌────────┴────────┐            ┌───────┴──────┐
-   │   EXPORTERS     │            │    ALLOY     │
-   │                 │            │ (porta 12345)│
-   │ • nginx-exporter│            │  - Coleta    │
-   │ • APIs /metrics │            │  - Processa  │
-   └────────▲────────┘            │  - Envia     │
-            │                     └───────▲──────┘
-            │                             │
-   ┌────────┴─────────────────────────────┴──────┐
-   │              APLICAÇÕES                     │
-   │                                             │
-   │  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
-   │  │  NGINX   │  │ .NET API │  │Python API│ │
-   │  │(porta 80)│  │(porta5000│  │(porta8001│ │
-   │  └──────────┘  └──────────┘  └──────────┘ │
-   │  ┌──────────┐  ┌──────────────────────┐   │
-   │  │ Java API │  │   Next.js App        │   │
-   │  │(porta8002│  │   (porta 3001)       │   │
-   │  └──────────┘  └──────────────────────┘   │
-   └───────────────────────────────────────────┘
+```mermaid
+graph TB
+   subgraph Applications["🔧 APLICAÇÕES"]
+      Nginx["Nginx<br/>porta 80"]
+      DotNet["dotnet-api<br/>C# .NET<br/>porta 5000"]
+      Python["python-api<br/>Python/FastAPI<br/>porta 8001"]
+      Java["java-api<br/>Java/Spring<br/>porta 8002"]
+      NextJS["nextjs-app<br/>Next.js<br/>porta 3001"]
+      Angular["angular-app<br/>Angular 18<br/>porta 4200"]
+   end
+
+   subgraph Exporters["📤 EXPORTERS"]
+      NginxExp["nginx-exporter<br/>porta 9113"]
+   end
+
+   subgraph Observability["📊 OBSERVABILIDADE"]
+      Prometheus["Prometheus<br/>porta 9090"]
+      Loki["Loki<br/>porta 3100"]
+      Alloy["Grafana Alloy<br/>porta 12345/12347"]
+   end
+
+   subgraph Visualization["📈 VISUALIZAÇÃO"]
+      Grafana["Grafana<br/>porta 3000"]
+   end
+
+   Nginx -->|scrape| NginxExp
+   NginxExp -->|metrics| Prometheus
+   DotNet -->|/metrics| Prometheus
+   Python -->|/metrics| Prometheus
+   Java -->|/metrics| Prometheus
+   NextJS -->|/metrics| Prometheus
+
+   Nginx -->|logs| Alloy
+   DotNet -->|logs| Alloy
+   Python -->|logs| Alloy
+   Java -->|logs| Alloy
+   NextJS -->|logs| Alloy
+   Angular -->|Faro SDK<br/>RUM| Alloy
+
+   Alloy -->|push| Loki
+
+   Prometheus -->|query| Grafana
+   Loki -->|query| Grafana
+
+   style Applications fill:#e1f5ff
+   style Exporters fill:#fff3e0
+   style Observability fill:#f3e5f5
+   style Visualization fill:#e8f5e9
 ```
 
 ### Fluxo de Dados
@@ -151,6 +161,13 @@ Este laboratório foi criado para ensinar:
 4. Logs indexados por labels no Loki
 5. Grafana consulta Loki e exibe logs filtrados
 
+**Frontend (Real User Monitoring):**
+1. Angular app instrumentada com Faro SDK
+2. SDK captura Core Web Vitals, erros, interações do usuário
+3. Dados enviados para Alloy via HTTP (push na porta 12347)
+4. Alloy processa e envia logs para Loki
+5. Grafana exibe métricas de experiência do usuário
+
 ---
 
 ## 🛠️ Stack Tecnológica
@@ -162,7 +179,7 @@ Este laboratório foi criado para ensinar:
 | **Grafana** | latest | Visualização e dashboards | 3000 |
 | **Prometheus** | latest | Coleta e armazenamento de métricas | 9090 |
 | **Loki** | latest | Agregação e consulta de logs | 3100 |
-| **Grafana Alloy** | latest | Agente universal de coleta | 12345 |
+| **Grafana Alloy** | latest | Agente universal de coleta (logs + RUM) | 12345, 12347 |
 | **nginx-exporter** | latest | Exporter de métricas do Nginx | 9113 |
 
 ### Aplicações
@@ -173,6 +190,7 @@ Este laboratório foi criado para ensinar:
 | **python-api** | Python / FastAPI | 3.12 | 8001 | OpenTelemetry |
 | **java-api** | Java / Spring Boot | 21 | 8002 | Micrometer |
 | **nextjs-app** | TypeScript / Next.js | 14 | 3001 | prom-client |
+| **angular-app** | TypeScript / Angular | 18 | 4200 | Grafana Faro SDK |
 | **nginx** | Nginx | latest | 8080 | stub_status |
 
 ### Infraestrutura
@@ -236,6 +254,15 @@ Este laboratório foi construído de forma **incremental** em 7 fases, cada uma 
 - Interface visual para teste
 - Stack completa (frontend + backend + observabilidade)
 
+### **Fase 8: Angular + Grafana Faro (Real User Monitoring)**
+- Observabilidade de frontend (RUM)
+- Grafana Faro SDK para Angular
+- Core Web Vitals (LCP, FID, CLS)
+- Rastreamento de erros JavaScript
+- Métricas de latência de API
+- Alloy com receiver Faro para coletar dados do frontend
+- Monitoramento de experiência do usuário real
+
 ---
 
 ## 📋 Pré-requisitos
@@ -292,9 +319,10 @@ docker compose ps
 - ✅ python-api
 - ✅ java-api
 - ✅ nextjs-app
+- ✅ angular-app
 - ✅ prometheus
 - ✅ loki
-- ✅ alloy
+- ✅ alloy (logs + RUM)
 - ✅ grafana
 
 ### 3. Acessar as Interfaces
@@ -304,6 +332,7 @@ docker compose ps
 | **Grafana** | http://localhost:3000 | admin / admin |
 | **Prometheus** | http://localhost:9090 | - |
 | **Next.js App** | http://localhost:3001 | - |
+| **Angular App** | http://localhost:4200 | - |
 | **.NET API** | http://localhost:5000/weatherforecast | - |
 | **Python API** | http://localhost:8001/docs | - |
 | **Java API** | http://localhost:8002/actuator/health | - |
@@ -549,9 +578,20 @@ lab-observabilidade/
 │   │   ├── src/
 │   │   ├── pom.xml
 │   │   └── Dockerfile
-│   └── nextjs-app/               # App Next.js
+│   ├── nextjs-app/               # App Next.js
+│   │   ├── src/
+│   │   ├── package.json
+│   │   └── Dockerfile
+│   └── angular-app/              # App Angular (RUM)
 │       ├── src/
+│       │   ├── app/
+│       │   │   ├── app.component.ts
+│       │   │   └── faro.config.ts
+│       │   ├── main.ts
+│       │   └── styles.css
 │       ├── package.json
+│       ├── angular.json
+│       ├── nginx.conf
 │       └── Dockerfile
 ├── observability/                # Stack de observabilidade
 │   ├── prometheus/
@@ -559,7 +599,7 @@ lab-observabilidade/
 │   ├── loki/
 │   │   └── loki-config.yml       # Config do Loki
 │   ├── alloy/
-│   │   └── config.alloy          # Config do Alloy
+│   │   └── config.alloy          # Config do Alloy (logs + RUM)
 │   ├── grafana/                  # Dashboards (provisioning)
 │   └── nginx/
 │       ├── nginx.conf            # Config do Nginx
@@ -706,12 +746,23 @@ lab-observabilidade/
 
 ## 🤝 Contribuindo
 
-Contribuições são bem-vindas! Sinta-se à vontade para:
+Contribuições são muito bem-vindas! 🎉
 
-- Reportar bugs
-- Sugerir melhorias
-- Adicionar mais exemplos
-- Melhorar a documentação
+Para contribuir com este projeto, por favor leia o **[Guia de Contribuição](CONTRIBUTING.md)** que contém:
+
+- 📋 Como reportar bugs
+- ✨ Como sugerir melhorias
+- 💻 Padrões de código
+- 📝 Padrões de commit
+- 🔀 Processo de Pull Request
+
+**Formas de contribuir:**
+- 🐛 Reportar bugs
+- ✨ Sugerir melhorias
+- 💻 Adicionar mais exemplos
+- 📝 Melhorar a documentação
+- 🎨 Criar novos dashboards
+- 🧪 Adicionar testes
 
 ---
 
