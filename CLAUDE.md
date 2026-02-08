@@ -9,8 +9,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Este é um **laboratório educacional de observabilidade** que demonstra conceitos modernos de monitoramento, logging e métricas usando a Stack Grafana (Prometheus, Loki, Alloy, Grafana) com aplicações em múltiplas linguagens (.NET, Python, Java, TypeScript).
 
 **Stack:**
-- **Observabilidade**: Grafana, Prometheus, Loki, Grafana Alloy, Node Exporter, Windows Exporter
+- **Observabilidade**: Grafana, Prometheus, Loki, Grafana Tempo, Grafana Alloy, Node Exporter, Windows Exporter
 - **Aplicações**: .NET API, Python FastAPI, Java Spring Boot, Next.js, Angular, Nginx
+- **Banco de Dados**: PostgreSQL 18-alpine (1000 produtos para traces realistas)
 - **Infraestrutura**: Docker + Docker Compose
 
 ---
@@ -43,12 +44,15 @@ docker compose down && docker compose up -d --build
 
 - **Grafana**: http://localhost:3000 (admin/admin)
 - **Prometheus**: http://localhost:9090
+- **Tempo**: http://localhost:3200 (API)
+- **pgAdmin**: http://localhost:5050 (gerenciamento PostgreSQL)
 - **Next.js**: http://localhost:3001
 - **Angular**: http://localhost:4200
 - **.NET API**: http://localhost:5000
 - **Python API**: http://localhost:8001
 - **Java API**: http://localhost:8002
 - **Nginx**: http://localhost:8080
+- **PostgreSQL**: localhost:5432 (banco de dados)
 
 ### Testar Métricas
 
@@ -90,6 +94,232 @@ rate(http_server_request_duration_seconds_count{job="dotnet-api"}[1m])
 # Taxa de logs
 rate({container="python-api"}[1m])
 ```
+
+**TraceQL (Tempo):**
+```traceql
+# Todos os traces de um serviço
+{ resource.service.name="dotnet-api" }
+
+# Traces com queries SQL
+{ resource.service.name="dotnet-api" && span.db.statement != nil }
+
+# Traces com duração > 100ms
+{ resource.service.name="dotnet-api" && duration > 100ms }
+
+# Traces com erro
+{ resource.service.name="dotnet-api" && status = error }
+```
+
+---
+
+## 🔍 Distributed Tracing (Fase 2)
+
+### Grafana Tempo v2.9.1
+
+**⚠️ IMPORTANTE - Bug na versão 2.10.0:**
+A versão 2.10.0 do Tempo tem um bug conhecido onde o módulo `ingester` não é inicializado em modo monolithic (single-binary), causando o erro "InstancesCount <= 0". Use a versão **2.9.1** ou anteriores (2.6.0, 2.7.x, 2.8.x, 2.9.x) até que o bug seja corrigido.
+
+**Versões testadas e funcionais:**
+- ✅ v2.6.0 - funciona
+- ✅ v2.8.2 - funciona
+- ✅ v2.9.1 - funciona (recomendada)
+- ❌ v2.10.0 - ingester não inicializa
+
+### Componentes de Tracing
+
+**Stack de Tracing:**
+- **Tempo 2.9.1**: Backend para armazenamento de traces
+- **OpenTelemetry**: Instrumentação da API .NET
+- **Grafana Alloy**: Coletor de traces (OTLP receiver)
+- **PostgreSQL 18-alpine**: Banco de dados com 1000 produtos para queries realistas
+
+**Fluxo de Dados:**
+1. API .NET gera traces com OpenTelemetry SDK
+2. Traces incluem spans HTTP, Entity Framework Core (SQL queries)
+3. Alloy recebe traces via OTLP (portas 4317 gRPC / 4318 HTTP)
+4. Alloy encaminha para Tempo
+5. Tempo armazena traces e gera métricas (service graphs, span metrics)
+6. Métricas são enviadas ao Prometheus via remote_write
+7. Grafana consulta traces no Tempo e visualiza Service Graph
+
+### Configuração do Tempo
+
+**Config mínima para modo monolithic (`tempo-config.yml`):**
+```yaml
+stream_over_http_enabled: true
+
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317  # IMPORTANTE: 0.0.0.0, não 127.0.0.1
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+  max_block_duration: 5m
+
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+      cluster: lab-observabilidade
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/blocks
+    wal:
+      path: /var/tempo/wal
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [service-graphs, span-metrics]
+```
+
+**Configuração do Prometheus:**
+- Adicionar flag `--web.enable-remote-write-receiver` para aceitar métricas do Tempo
+- Tempo envia métricas de service graphs e span metrics automaticamente
+
+### Visualizar Traces no Grafana
+
+**1. Grafana Explore:**
+- URL: http://localhost:3000/explore
+- Selecionar datasource "Tempo"
+
+**2. Search (interface visual):**
+- Service Name: `dotnet-api`
+- Span Name: filtros opcionais
+- Tags: `http.method`, `http.status_code`, etc.
+
+**3. TraceQL (queries avançadas):**
+```traceql
+# ⚠️ IMPORTANTE: usar resource.service.name, NÃO service.name
+{ resource.service.name="dotnet-api" }
+{ resource.service.name="dotnet-api" && span.db.statement != nil }
+{ resource.service.name="dotnet-api" && duration > 100ms }
+```
+
+**4. Service Graph:**
+- Visualização do fluxo de requisições entre serviços
+- Mostra taxa de requisições, latência e erros
+- Requer métricas do metrics_generator no Prometheus
+
+**5. Correlação com Logs:**
+- Clicar em um span no trace
+- Grafana busca logs correlacionados automaticamente via tags
+
+### Instrumentação da API .NET
+
+**Pacotes necessários:**
+```xml
+<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.10.0" />
+<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.10.0" />
+<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.10.0" />
+<PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.0.0-beta.14" />
+```
+
+**Configuração (`Program.cs`):**
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing =>
+    {
+        tracing
+            .SetResourceBuilder(ResourceBuilder.CreateDefault()
+                .AddService("dotnet-api", serviceVersion: "1.0.0"))
+            .AddAspNetCoreInstrumentation(options =>
+            {
+                options.RecordException = true;
+                options.EnrichWithHttpRequest = (activity, request) =>
+                {
+                    activity.SetTag("http.request.method", request.Method);
+                    activity.SetTag("http.request.path", request.Path);
+                };
+            })
+            .AddHttpClientInstrumentation()
+            .AddEntityFrameworkCoreInstrumentation(options =>
+            {
+                options.SetDbStatementForText = true;
+                options.EnrichWithIDbCommand = (activity, command) =>
+                {
+                    activity.SetTag("db.query", command.CommandText);
+                };
+            })
+            .AddOtlpExporter(options =>
+            {
+                options.Endpoint = new Uri("http://alloy:4317");
+                options.Protocol = OtlpExportProtocol.Grpc;
+            });
+    });
+```
+
+**Spans gerados automaticamente:**
+- ✅ HTTP requests (ASP.NET Core)
+- ✅ SQL queries (Entity Framework Core)
+- ✅ HTTP client calls
+- ✅ Exceções (quando configurado)
+
+**Atributos úteis nos traces:**
+- `http.method`, `http.route`, `http.status_code`
+- `db.statement` - SQL query completa
+- `db.system`, `db.name` - informações do banco
+- Duração de cada span em microssegundos
+
+### Gerar Tráfego para Traces
+
+```bash
+# GET produtos (paginação + SQL queries)
+for i in {1..10}; do
+  curl -s "http://localhost:5000/api/products?page=$((RANDOM % 10 + 1))&pageSize=5" > /dev/null
+  sleep 0.2
+done
+
+# GET por ID (queries SQL específicas)
+for i in {1..10}; do
+  curl -s "http://localhost:5000/api/products/$((RANDOM % 1000 + 1))" > /dev/null
+  sleep 0.2
+done
+
+# Count
+for i in {1..5}; do
+  curl -s "http://localhost:5000/api/products/count" > /dev/null
+  sleep 0.2
+done
+```
+
+### Troubleshooting Traces
+
+**Traces não aparecem no Grafana:**
+1. Verificar se Tempo está rodando: `docker logs tempo | grep "starting module=ingester"`
+2. Verificar se Alloy está encaminhando: `docker logs alloy | grep tempo`
+3. Verificar endpoints OTLP: devem ser `0.0.0.0:4317` e não `127.0.0.1`
+4. Gerar tráfego na API para criar traces
+
+**Service Graph vazio:**
+1. Verificar se Prometheus aceita remote write: flag `--web.enable-remote-write-receiver`
+2. Verificar se metrics_generator tem `remote_write` configurado
+3. Aguardar 1-2 minutos após gerar tráfego
+4. Verificar métricas no Prometheus: `curl http://localhost:9090/api/v1/label/__name__/values | grep traces_service_graph`
+
+**Erro "InstancesCount <= 0":**
+- Versão 2.10.0 do Tempo está com bug
+- Usar versão 2.9.1 ou anterior
 
 ---
 

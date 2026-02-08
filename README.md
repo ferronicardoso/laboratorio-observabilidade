@@ -2,9 +2,19 @@
 
 > **Projeto educacional completo** sobre observabilidade moderna com Grafana, Prometheus, Loki, Alloy e OpenTelemetry em múltiplas linguagens.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Mermaid](https://img.shields.io/badge/Mermaid-FF3670?style=flat&logo=mermaid&logoColor=white)](https://mermaid.js.org/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Kubernetes](https://img.shields.io/badge/Prometheus-E6522C?style=flat&logo=prometheus&logoColor=white)](https://prometheus.io/)
 [![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat&logo=grafana&logoColor=white)](https://grafana.com/)
+[![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat&logo=prometheus&logoColor=white)](https://prometheus.io/)
+[![.NET](https://img.shields.io/badge/.NET-512BD4?style=flat&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
+[![Java](https://img.shields.io/badge/Java-ED8B00?style=flat&logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![Angular](https://img.shields.io/badge/Angular-DD0031?style=flat&logo=angular&logoColor=white)](https://angular.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-3F51B5?style=flat&logo=opentelemetry&logoColor=white)](https://opentelemetry.io/)
 
 ---
 
@@ -39,13 +49,16 @@ O projeto implementa uma stack completa de observabilidade usando ferramentas op
 - ✅ **4 APIs em diferentes linguagens** instrumentadas para observabilidade
 - ✅ **Frontend Next.js** moderno com métricas backend
 - ✅ **Frontend Angular** com Real User Monitoring (Grafana Faro)
-- ✅ **Stack Grafana completa** (Prometheus, Loki, Alloy, Grafana, Faro)
+- ✅ **Stack Grafana completa** (Prometheus, Loki, Tempo, Alloy, Grafana, Faro)
+- ✅ **Distributed Tracing** com Grafana Tempo e OpenTelemetry
+- ✅ **PostgreSQL 18** com 1000 produtos para traces realistas
 - ✅ **OpenTelemetry** para padronização
 - ✅ **Dashboards customizados** no Grafana
 - ✅ **Docker Compose** para fácil execução
 - ✅ **Métricas customizadas** em todas as aplicações
 - ✅ **Coleta de logs** centralizada com Loki
 - ✅ **Monitoramento de experiência do usuário** com Core Web Vitals
+- ✅ **Service Graph** e correlação traces ↔ logs ↔ métricas
 
 ---
 
@@ -177,9 +190,10 @@ graph TB
 | Ferramenta | Versão | Função | Porta |
 |------------|--------|--------|-------|
 | **Grafana** | latest | Visualização e dashboards | 3000 |
-| **Prometheus** | latest | Coleta e armazenamento de métricas | 9090 |
+| **Prometheus** | latest | Coleta e armazenamento de métricas (+ remote write) | 9090 |
 | **Loki** | latest | Agregação e consulta de logs | 3100 |
-| **Grafana Alloy** | latest | Agente universal de coleta (logs + RUM) | 12345, 12347 |
+| **Grafana Tempo** | 2.9.1 | Backend para distributed tracing | 3200 |
+| **Grafana Alloy** | latest | Agente universal de coleta (logs + RUM + traces) | 12345, 12347, 4317/4318 |
 | **nginx-exporter** | latest | Exporter de métricas do Nginx | 9113 |
 | **Node Exporter** | latest | Métricas do host Linux/WSL | 9100 |
 | **Windows Exporter** | latest | Métricas do host Windows + IIS | 9182 |
@@ -194,6 +208,13 @@ graph TB
 | **nextjs-app** | TypeScript / Next.js | 14 | 3001 | prom-client |
 | **angular-app** | TypeScript / Angular | 18 | 4200 | Grafana Faro SDK |
 | **nginx** | Nginx | latest | 8080 | stub_status |
+
+### Banco de Dados
+
+| Serviço | Tecnologia | Versão | Porta | Descrição |
+|---------|------------|--------|-------|-----------|
+| **PostgreSQL** | PostgreSQL | 18-alpine | 5432 | Banco de dados com 1000 produtos para traces realistas |
+| **pgAdmin** | pgAdmin 4 | latest | 5050 | Interface de gerenciamento PostgreSQL |
 
 ### Infraestrutura
 
@@ -442,7 +463,49 @@ curl -X POST http://localhost:3001/api/tasks \
 curl http://localhost:3001/api/tasks
 ```
 
-### 3. Consultar Métricas no Grafana
+### 3. Testes de Carga com k6
+
+**Para testes mais realistas e avançados**, use o **k6** para simular múltiplos usuários simultâneos e medir performance sob carga.
+
+📦 **Instalação:**
+```bash
+# Windows
+choco install k6
+
+# Linux/WSL
+sudo gpg -k
+sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+sudo apt-get update
+sudo apt-get install k6
+
+# macOS
+brew install k6
+```
+
+🎯 **Executar testes:**
+```bash
+# Teste individual por API
+k6 run tests/k6/test-dotnet-api.js
+k6 run tests/k6/test-python-api.js
+k6 run tests/k6/test-java-api.js
+k6 run tests/k6/test-nextjs-app.js
+
+# Teste de todos os serviços simultaneamente
+k6 run tests/k6/test-all-services.js
+
+# Cenários avançados (carga constante, rampa, spike)
+k6 run tests/k6/load-test-scenarios.js
+
+# Stress test customizado (50 VUs por 2 minutos)
+k6 run --vus 50 --duration 2m tests/k6/test-dotnet-api.js
+```
+
+💡 **Dica:** Abra o Grafana antes de executar os testes para ver as métricas em tempo real!
+
+📚 **Documentação completa:** [`tests/k6/README.md`](tests/k6/README.md)
+
+### 4. Consultar Métricas no Grafana
 
 **No Grafana → Explore → Prometheus:**
 
@@ -466,7 +529,7 @@ tasks_created_total
 histogram_quantile(0.95, rate(http_server_request_duration_seconds_bucket[1m]))
 ```
 
-### 4. Consultar Logs no Grafana
+### 5. Consultar Logs no Grafana
 
 **No Grafana → Explore → Loki:**
 
@@ -771,6 +834,145 @@ lab-observabilidade/
 - **Alloy** monitora arquivos de log
 - Adiciona labels automaticamente
 - Envia para Loki via HTTP
+
+---
+
+## 🔍 Distributed Tracing
+
+### Grafana Tempo v2.9.1
+
+Este laboratório implementa **Distributed Tracing** completo usando **Grafana Tempo** para rastrear requisições end-to-end através da stack.
+
+**⚠️ IMPORTANTE - Bug na versão 2.10.0:**
+A versão 2.10.0 do Tempo tem um bug conhecido onde o módulo `ingester` não é inicializado em modo monolithic, causando erro "InstancesCount <= 0". **Use a versão 2.9.1** (recomendada) ou anteriores (2.6.0, 2.7.x, 2.8.x).
+
+### O que é Tracing?
+
+**Distributed Tracing** é o terceiro pilar da observabilidade que permite:
+- 🔎 Rastrear o caminho completo de uma requisição
+- ⏱️ Medir latências de cada operação (HTTP, SQL, etc.)
+- 🐛 Identificar gargalos de performance
+- 🔗 Correlacionar com logs e métricas
+- 📊 Visualizar dependências entre serviços
+
+### Fluxo de Traces
+
+```
+API .NET → OpenTelemetry → Alloy (OTLP) → Tempo → Grafana
+  ↓
+PostgreSQL
+  ↓
+SQL Queries capturadas nos spans
+```
+
+**Componentes:**
+1. **API .NET** - Gera traces com OpenTelemetry SDK
+2. **OpenTelemetry** - Instrumenta HTTP requests e Entity Framework Core (SQL)
+3. **Alloy** - Recebe traces via OTLP (portas 4317 gRPC / 4318 HTTP)
+4. **Tempo** - Armazena traces e gera métricas (service graphs)
+5. **Prometheus** - Recebe métricas do Tempo via remote write
+6. **Grafana** - Visualiza traces, service graph, correlações
+
+### Traces Capturados
+
+A API .NET gera traces automáticos para:
+- ✅ **HTTP Requests** - Duração de cada endpoint
+- ✅ **SQL Queries** - Queries do Entity Framework Core com statement completo
+- ✅ **HTTP Client** - Chamadas HTTP externas
+- ✅ **Exceções** - Stack traces de erros
+
+**Exemplo de trace:**
+```
+GET /api/products/42 (150ms)
+  ├─ HTTP Request (150ms)
+  │   └─ Entity Framework Core (45ms)
+  │       └─ SQL Query: SELECT * FROM Products WHERE Id = 42 (45ms)
+```
+
+### PostgreSQL + 1000 Produtos
+
+O lab inclui PostgreSQL 18-alpine com **1000 produtos** pré-carregados para criar traces realistas:
+- 📦 1000 produtos em 10 categorias
+- 🔍 Queries variadas (SELECT, INSERT, UPDATE, DELETE)
+- 📊 Traces com SQL statements completos
+- ⚡ Performance realista de banco de dados
+
+**Endpoints instrumentados:**
+- `GET /api/products` - Lista paginada
+- `GET /api/products/{id}` - Busca por ID
+- `POST /api/products` - Criar produto
+- `PUT /api/products/{id}` - Atualizar produto
+- `DELETE /api/products/{id}` - Deletar produto
+- `GET /api/products/count` - Contar produtos
+
+### Como Visualizar Traces
+
+**1. Grafana Explore:**
+```
+http://localhost:3000/explore → Selecionar "Tempo"
+```
+
+**2. Search (interface visual):**
+- Service Name: `dotnet-api`
+- Filtrar por tags, duração, status
+
+**3. TraceQL (queries avançadas):**
+```traceql
+# ⚠️ IMPORTANTE: Usar resource.service.name (não service.name)
+{ resource.service.name="dotnet-api" }
+
+# Traces com SQL queries
+{ resource.service.name="dotnet-api" && span.db.statement != nil }
+
+# Traces lentos (> 100ms)
+{ resource.service.name="dotnet-api" && duration > 100ms }
+
+# Traces com erro
+{ resource.service.name="dotnet-api" && status = error }
+```
+
+**4. Service Graph:**
+- Visualização do fluxo de requisições
+- Taxa de req/s, latência, erros
+- Requer Prometheus com `--web.enable-remote-write-receiver`
+
+**5. Correlação com Logs:**
+- Clicar em um span no trace
+- Grafana busca logs relacionados automaticamente
+- Correlação via tags (container, service)
+
+### Gerar Traces
+
+```bash
+# GET produtos (queries SQL variadas)
+for i in {1..10}; do
+  curl -s "http://localhost:5000/api/products?page=$((RANDOM % 10 + 1))&pageSize=5" > /dev/null
+  sleep 0.2
+done
+
+# GET por ID (query SQL específica)
+for i in {1..10}; do
+  curl -s "http://localhost:5000/api/products/$((RANDOM % 1000 + 1))" > /dev/null
+  sleep 0.2
+done
+
+# Criar produto (INSERT)
+curl -X POST http://localhost:5000/api/products \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Novo Produto","description":"Teste","price":99.99,"stock":10}'
+```
+
+Depois acesse o Grafana Explore → Tempo e visualize os traces!
+
+### Métricas de Service Graphs
+
+O Tempo gera automaticamente métricas sobre os traces:
+- `traces_service_graph_request_total` - Total de requisições entre serviços
+- `traces_service_graph_request_failed_total` - Requisições com falha
+- `traces_service_graph_request_server_seconds` - Latência server-side
+- `traces_service_graph_request_client_seconds` - Latência client-side
+
+Essas métricas são enviadas ao Prometheus via remote write e usadas pelo Service Graph.
 
 ---
 

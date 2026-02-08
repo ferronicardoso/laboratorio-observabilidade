@@ -9,6 +9,31 @@ loki.write "local" {
   }
 }
 
+// Componente que envia traces para o Tempo
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// Receiver OTLP para traces (gRPC)
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces  = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
 // Monitora e lê os arquivos de log do Nginx
 loki.source.file "nginx_logs" {
   targets = [

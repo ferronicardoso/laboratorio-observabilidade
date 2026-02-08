@@ -19,3 +19,19 @@ datasources:
     editable: true
     jsonData:
       maxLines: 1000
+
+  # Tempo - Traces
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: 'loki'
+        tags: ['container', 'service']
+      tracesToMetrics:
+        datasourceUid: 'Prometheus'
+      serviceMap:
+        datasourceUid: 'Prometheus'
+      nodeGraph:
+        enabled: true

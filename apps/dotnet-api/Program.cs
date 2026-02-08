@@ -1,7 +1,18 @@
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Resources;
 using System.Diagnostics.Metrics;
+using Microsoft.EntityFrameworkCore;
+using dotnet_api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configurar DbContext com PostgreSQL
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Adicionar Controllers
+builder.Services.AddControllers();
 
 // Criar Meter para métricas customizadas
 var meter = new Meter("WeatherForecast.API", "1.0");
@@ -19,7 +30,7 @@ builder.Services.AddHttpLogging(logging =>
     logging.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.All;
 });
 
-// Configurar OpenTelemetry para métricas
+// Configurar OpenTelemetry para métricas E traces
 builder.Services.AddOpenTelemetry()
     .WithMetrics(metrics =>
     {
@@ -33,11 +44,72 @@ builder.Services.AddOpenTelemetry()
             .AddProcessInstrumentation()
             // Adicionar nossas métricas customizadas
             .AddMeter("WeatherForecast.API")
+            .AddMeter("Products.API")
             // Exporter para Prometheus
             .AddPrometheusExporter();
+    })
+    .WithTracing(tracing =>
+    {
+        tracing
+            // Configurar resource (nome do serviço)
+            .SetResourceBuilder(OpenTelemetry.Resources.ResourceBuilder.CreateDefault()
+                .AddService("dotnet-api", serviceVersion: "1.0.0"))
+            // Instrumentação automática do ASP.NET Core (HTTP requests)
+            .AddAspNetCoreInstrumentation(options =>
+            {
+                options.RecordException = true;
+                options.EnrichWithHttpRequest = (activity, request) =>
+                {
+                    activity.SetTag("http.request.method", request.Method);
+                    activity.SetTag("http.request.path", request.Path);
+                };
+                options.EnrichWithHttpResponse = (activity, response) =>
+                {
+                    activity.SetTag("http.response.status_code", response.StatusCode);
+                };
+            })
+            // Instrumentação de HttpClient
+            .AddHttpClientInstrumentation()
+            // Instrumentação de Entity Framework Core (SQL queries!)
+            .AddEntityFrameworkCoreInstrumentation(options =>
+            {
+                options.SetDbStatementForText = true;
+                options.SetDbStatementForStoredProcedure = true;
+                options.EnrichWithIDbCommand = (activity, command) =>
+                {
+                    activity.SetTag("db.query", command.CommandText);
+                };
+            })
+            // Exporter OTLP (envia para Alloy → Tempo)
+            .AddOtlpExporter(options =>
+            {
+                options.Endpoint = new Uri("http://alloy:4317");
+                options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+            });
     });
 
 var app = builder.Build();
+
+// Criar banco e seed automaticamente
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+
+        // EnsureCreated cria o banco e todas as tabelas
+        await context.Database.EnsureCreatedAsync();
+        app.Logger.LogInformation("Database criado com sucesso");
+
+        // Fazer seed de dados
+        await DataSeeder.SeedData(context, app.Logger);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Erro ao criar database ou seed no banco de dados");
+    }
+}
 
 // Configure the HTTP request pipeline.
 app.UseHttpLogging();
@@ -51,6 +123,9 @@ app.UseHttpsRedirection();
 
 // Endpoint de métricas para Prometheus
 app.MapPrometheusScrapingEndpoint();
+
+// Mapear Controllers
+app.MapControllers();
 
 var summaries = new[]
 {
