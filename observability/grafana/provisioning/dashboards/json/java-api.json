@@ -667,7 +667,12 @@
   "preload": false,
   "refresh": "5s",
   "schemaVersion": 42,
-  "tags": [],
+  "tags": [
+    "java-api",
+    "java",
+    "api",
+    "spring-boot"
+  ],
   "templating": {
     "list": []
   },

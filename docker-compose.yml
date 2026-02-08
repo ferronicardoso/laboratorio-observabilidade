@@ -145,6 +145,24 @@ services:
     networks:
       - obs-net
 
+  node-exporter-linux:
+    image: prom/node-exporter:latest
+    container_name: node-exporter-linux
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro
+    networks:
+      - obs-net
+    restart: unless-stopped
+
 networks:
   obs-net:
 

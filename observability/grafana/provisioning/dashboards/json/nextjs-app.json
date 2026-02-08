@@ -146,7 +146,13 @@
   "preload": false,
   "refresh": "5s",
   "schemaVersion": 42,
-  "tags": [],
+  "tags": [
+    "nextjs-app",
+    "nextjs",
+    "app",
+    "logs",
+    "status"
+  ],
   "templating": {
     "list": []
   },

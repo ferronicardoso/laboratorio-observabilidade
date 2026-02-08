@@ -332,7 +332,10 @@
   "preload": false,
   "refresh": "5s",
   "schemaVersion": 42,
-  "tags": ["logs", "apis"],
+  "tags": [
+    "logs", 
+    "apis"    
+  ],
   "templating": {
     "list": []
   },

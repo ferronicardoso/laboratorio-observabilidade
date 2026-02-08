@@ -574,7 +574,12 @@
   "preload": false,
   "refresh": "5s",
   "schemaVersion": 42,
-  "tags": [],
+    "tags": [
+    "dotnet-api",
+    "dotnet",
+    "api",
+    "weatherforecast"
+  ],
   "templating": {
     "list": []
   },
