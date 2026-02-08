@@ -82,7 +82,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "100 - (avg(rate(windows_cpu_time_total{mode=\"idle\",job=\"windows-server\"}[2m])) * 100)",
+          "expr": "100 - (avg(rate(windows_cpu_time_total{mode=\"idle\",job=\\"node-exporter-windows\\"}[2m])) * 100)",
           "refId": "A"
         }
       ],
@@ -150,7 +150,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "100 * (1 - (windows_os_physical_memory_free_bytes{job=\"windows-server\"} / windows_cs_physical_memory_bytes{job=\"windows-server\"}))",
+          "expr": "100 * (1 - (windows_memory_physical_free_bytes{job=\\"node-exporter-windows\\"} / windows_memory_physical_total_bytes{job=\\"node-exporter-windows\\"}))",
           "refId": "A"
         }
       ],
@@ -218,7 +218,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "100 - ((windows_logical_disk_free_bytes{job=\"windows-server\",volume=\"C:\"} * 100) / windows_logical_disk_size_bytes{job=\"windows-server\",volume=\"C:\"})",
+          "expr": "100 - ((windows_logical_disk_free_bytes{job=\\"node-exporter-windows\\",volume=\"C:\"} * 100) / windows_logical_disk_size_bytes{job=\\"node-exporter-windows\\",volume=\"C:\"})",
           "refId": "A"
         }
       ],
@@ -280,7 +280,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "windows_os_processes{job=\"windows-server\"}",
+          "expr": "windows_system_processes{job=\\"node-exporter-windows\\"}",
           "refId": "A"
         }
       ],
@@ -357,7 +357,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "up{job=\"windows-server\"}",
+          "expr": "up{job=\\"node-exporter-windows\\"}",
           "refId": "A"
         }
       ],
@@ -448,7 +448,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "rate(windows_net_bytes_received_total{job=\"windows-server\"}[5m])",
+          "expr": "rate(windows_net_bytes_received_total{job=\\"node-exporter-windows\\"}[5m])",
           "legendFormat": "In",
           "refId": "A"
         },
@@ -457,7 +457,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "rate(windows_net_bytes_sent_total{job=\"windows-server\"}[5m])",
+          "expr": "rate(windows_net_bytes_sent_total{job=\\"node-exporter-windows\\"}[5m])",
           "legendFormat": "Out",
           "refId": "B"
         }
@@ -528,7 +528,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum(windows_iis_current_connections{job=\"windows-server\"})",
+          "expr": "sum(windows_iis_current_connections{job=\\"node-exporter-windows\\"})",
           "refId": "A"
         }
       ],
@@ -619,7 +619,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "rate(windows_iis_requests_total{job=\"windows-server\"}[1m])",
+          "expr": "rate(windows_iis_requests_total{job=\\"node-exporter-windows\\"}[1m])",
           "legendFormat": "{{app}} - {{method}}",
           "refId": "A"
         }
@@ -687,7 +687,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum by(method) (rate(windows_iis_requests_total{job=\"windows-server\"}[5m]))",
+          "expr": "sum by(method) (rate(windows_iis_requests_total{job=\\"node-exporter-windows\\"}[5m]))",
           "legendFormat": "{{method}}",
           "refId": "A"
         }
@@ -779,7 +779,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "windows_iis_current_connections{job=\"windows-server\"}",
+          "expr": "windows_iis_current_connections{job=\\"node-exporter-windows\\"}",
           "legendFormat": "{{app}}",
           "refId": "A"
         }
@@ -871,7 +871,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "rate(windows_iis_received_bytes_total{job=\"windows-server\"}[5m])",
+          "expr": "rate(windows_iis_received_bytes_total{job=\\"node-exporter-windows\\"}[5m])",
           "legendFormat": "Received",
           "refId": "A"
         },
@@ -880,7 +880,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "rate(windows_iis_sent_bytes_total{job=\"windows-server\"}[5m])",
+          "expr": "rate(windows_iis_sent_bytes_total{job=\\"node-exporter-windows\\"}[5m])",
           "legendFormat": "Sent",
           "refId": "B"
         }
@@ -985,7 +985,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "windows_iis_worker_current_state{job=\"windows-server\"}",
+          "expr": "windows_iis_worker_current_state{job=\\"node-exporter-windows\\"}",
           "format": "table",
           "instant": true,
           "refId": "A"

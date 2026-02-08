@@ -82,7 +82,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\\"idle\\",job=\\"node-exporter-linux\\"}[5m])) * 100)",
           "refId": "A"
         }
       ],
@@ -150,7 +150,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "100 * (1 - ((node_memory_MemAvailable_bytes or node_memory_Buffers_bytes + node_memory_Cached_bytes + node_memory_MemFree_bytes) / node_memory_MemTotal_bytes))",
+          "expr": "100 * (1 - ((node_memory_MemAvailable_bytes{job=\"node-exporter-linux\"} or node_memory_Buffers_bytes{job=\"node-exporter-linux\"} + node_memory_Cached_bytes{job=\"node-exporter-linux\"} + node_memory_MemFree_bytes{job=\"node-exporter-linux\"}) / node_memory_MemTotal_bytes{job=\"node-exporter-linux\"}))",
           "refId": "A"
         }
       ],
@@ -158,39 +158,6 @@
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "Prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 90
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
       "gridPos": {
         "h": 8,
         "w": 6,
@@ -199,31 +166,17 @@
       },
       "id": 3,
       "options": {
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "content": "⚠️ **Métricas de Disco Indisponíveis**\n\nAs métricas de uso de disco não estão disponíveis no WSL2 devido a limitações do Node Exporter com o filesystem 9p (Plan 9 Protocol).\n\nPara monitorar o uso de disco do Windows, utilize o **dashboard Windows + IIS**.",
+        "mode": "markdown"
       },
       "pluginVersion": "12.3.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "Prometheus"
-          },
-          "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/host\",fstype!=\"tmpfs\"} * 100) / node_filesystem_size_bytes{mountpoint=\"/host\",fstype!=\"tmpfs\"})",
-          "refId": "A"
-        }
-      ],
       "title": "Disk Usage (/)",
-      "type": "gauge"
+      "type": "text"
     },
     {
       "datasource": {
@@ -309,7 +262,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "node_load1",
+          "expr": "node_load1{job=\"node-exporter-linux\"}",
           "legendFormat": "Load 1m",
           "refId": "A"
         },
@@ -318,7 +271,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "node_load5",
+          "expr": "node_load5{job=\"node-exporter-linux\"}",
           "legendFormat": "Load 5m",
           "refId": "B"
         },
@@ -327,7 +280,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "node_load15",
+          "expr": "node_load15{job=\"node-exporter-linux\"}",
           "legendFormat": "Load 15m",
           "refId": "C"
         }
@@ -419,7 +372,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\\"idle\\",job=\\"node-exporter-linux\\"}[5m])) * 100)",
           "legendFormat": "CPU Usage",
           "refId": "A"
         }
@@ -511,7 +464,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "node_memory_MemTotal_bytes",
+          "expr": "node_memory_MemTotal_bytes{job=\"node-exporter-linux\"}",
           "legendFormat": "Total",
           "refId": "A"
         },
@@ -520,7 +473,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "node_memory_MemTotal_bytes - (node_memory_MemAvailable_bytes or node_memory_Buffers_bytes + node_memory_Cached_bytes + node_memory_MemFree_bytes)",
+          "expr": "node_memory_MemTotal_bytes{job=\"node-exporter-linux\"} - (node_memory_MemAvailable_bytes{job=\"node-exporter-linux\"} or node_memory_Buffers_bytes{job=\"node-exporter-linux\"} + node_memory_Cached_bytes{job=\"node-exporter-linux\"} + node_memory_MemFree_bytes{job=\"node-exporter-linux\"})",
           "legendFormat": "Used",
           "refId": "B"
         },
@@ -529,7 +482,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "node_memory_MemAvailable_bytes or node_memory_Buffers_bytes + node_memory_Cached_bytes + node_memory_MemFree_bytes",
+          "expr": "node_memory_MemAvailable_bytes{job=\"node-exporter-linux\"} or node_memory_Buffers_bytes{job=\"node-exporter-linux\"} + node_memory_Cached_bytes{job=\"node-exporter-linux\"} + node_memory_MemFree_bytes{job=\"node-exporter-linux\"}",
           "legendFormat": "Available",
           "refId": "C"
         }
@@ -621,7 +574,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "rate(node_network_receive_bytes_total{device!~\"lo|veth.*\"}[5m])",
+          "expr": "rate(node_network_receive_bytes_total{job=\"node-exporter-linux\",device!~\"lo|veth.*\"}[5m])",
           "legendFormat": "{{device}} - Received",
           "refId": "A"
         },
@@ -630,7 +583,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "rate(node_network_transmit_bytes_total{device!~\"lo|veth.*\"}[5m])",
+          "expr": "rate(node_network_transmit_bytes_total{job=\"node-exporter-linux\",device!~\"lo|veth.*\"}[5m])",
           "legendFormat": "{{device}} - Transmitted",
           "refId": "B"
         }
@@ -722,7 +675,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "rate(node_disk_reads_completed_total[5m])",
+          "expr": "rate(node_disk_reads_completed_total{job=\"node-exporter-linux\"}[5m])",
           "legendFormat": "{{device}} - Reads",
           "refId": "A"
         },
@@ -731,7 +684,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "rate(node_disk_writes_completed_total[5m])",
+          "expr": "rate(node_disk_writes_completed_total{job=\"node-exporter-linux\"}[5m])",
           "legendFormat": "{{device}} - Writes",
           "refId": "B"
         }
