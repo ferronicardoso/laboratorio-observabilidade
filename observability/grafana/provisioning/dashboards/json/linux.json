@@ -709,7 +709,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "HOST - Monitoramento do Sistema",
+  "title": "WSL - Monitoramento do Sistema",
   "uid": "host-monitoring",
   "version": 1
 }

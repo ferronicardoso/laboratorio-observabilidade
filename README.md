@@ -181,6 +181,8 @@ graph TB
 | **Loki** | latest | Agregação e consulta de logs | 3100 |
 | **Grafana Alloy** | latest | Agente universal de coleta (logs + RUM) | 12345, 12347 |
 | **nginx-exporter** | latest | Exporter de métricas do Nginx | 9113 |
+| **Node Exporter** | latest | Métricas do host Linux/WSL | 9100 |
+| **Windows Exporter** | latest | Métricas do host Windows + IIS | 9182 |
 
 ### Aplicações
 
@@ -320,14 +322,21 @@ O Grafana está configurado com **provisioning automático**, o que significa qu
 - Prometheus (métricas)
 - Loki (logs)
 
-✅ **Dashboards:**
-- Lab Observabilidade - Overview (visão geral de todas as APIs)
-- Angular - Real User Monitoring (RUM do frontend)
-- Nginx - Logs (logs de acesso e erro do Nginx)
+✅ **Dashboards (10 dashboards provisionados automaticamente):**
+- Multi-Language Overview (visão geral de todas as APIs)
+- APIs - Logs Consolidados (logs de todas as APIs + Nginx)
+- .NET API Dashboard (métricas específicas da API .NET)
+- Python API Dashboard (métricas específicas da API Python)
+- Java API Dashboard (métricas específicas da API Java)
+- Next.js App Dashboard (métricas específicas do Next.js)
+- Angular App - RUM (Real User Monitoring do frontend)
+- Nginx Dashboard (métricas e logs do Nginx)
+- WSL - Monitoramento do Sistema (métricas do Linux/WSL)
+- HOST Windows + IIS (métricas do host Windows físico)
 
 **Não é necessário configurar manualmente!** Basta acessar o Grafana e os dashboards já estarão prontos.
 
-**Você deve ver 10 containers:**
+**Você deve ver 12 containers:**
 - ✅ nginx
 - ✅ nginx-exporter
 - ✅ dotnet-api
@@ -339,6 +348,7 @@ O Grafana está configurado com **provisioning automático**, o que significa qu
 - ✅ loki
 - ✅ alloy (logs + RUM)
 - ✅ grafana
+- ✅ node-exporter-linux (métricas do host WSL)
 
 ### 3. Acessar as Interfaces
 
@@ -494,26 +504,71 @@ curl http://localhost:3001/api/metrics | grep tasks
 
 ## 📊 Dashboards
 
-### Dashboards Criados
+### Dashboards Provisionados Automaticamente
 
-1. **Nginx - Observabilidade**
-   - Conexões ativas
-   - Requisições por segundo
-   - Total de requisições
-   - Status do Nginx
+O Grafana está configurado com **provisioning automático** de 10 dashboards completos:
 
-2. **API .NET - Weather Forecast**
+#### 1. **Multi-Language Overview**
+   - Visão geral de todas as APIs
+   - Comparação de requisições/s por linguagem
+   - Latência comparativa
+   - Uso de recursos
+
+#### 2. **APIs - Logs Consolidados**
+   - Logs de todas as APIs + Nginx
+   - Taxa de logs por serviço
+   - Filtros por container/job
+   - Busca em tempo real
+
+#### 3. **API .NET Dashboard**
    - Status da API
    - Total de previsões geradas
    - Requisições por segundo
    - Latência (P50, P95, P99)
    - Uso de memória GC
 
-3. **Dashboard Comparativo (Opcional)**
-   - Comparação de todas as APIs
-   - Requisições/s por linguagem
-   - Latência comparativa
-   - Uso de recursos
+#### 4. **API Python Dashboard**
+   - Métricas HTTP
+   - Items/Users criados
+   - Performance de endpoints
+   - Métricas de processo
+
+#### 5. **API Java Dashboard**
+   - Métricas HTTP
+   - Produtos/Pedidos criados
+   - Métricas JVM (memória, threads, GC)
+   - Métricas de sistema
+
+#### 6. **Next.js App Dashboard**
+   - Métricas HTTP das API routes
+   - Tarefas criadas/completadas
+   - Métricas do Node.js runtime
+   - Performance do servidor
+
+#### 7. **Angular App - Real User Monitoring (RUM)**
+   - Core Web Vitals (LCP, FID, CLS)
+   - Erros JavaScript
+   - Navegação e performance
+   - Experiência do usuário real
+
+#### 8. **Nginx Dashboard**
+   - Conexões ativas
+   - Requisições por segundo
+   - Total de requisições
+   - Status do Nginx
+   - Logs de acesso e erro
+
+#### 9. **WSL - Monitoramento do Sistema**
+   - CPU, Memória, Load do WSL
+   - Network Traffic
+   - Disk I/O
+   - ⚠️ Métricas de disco não disponíveis (limitação WSL2 + filesystem 9p)
+
+#### 10. **HOST Windows + IIS - Monitoramento**
+   - CPU, Memória, Disco do Windows
+   - Processos e status do sistema
+   - Métricas do IIS (se instalado)
+   - Network Traffic
 
 ### Como Criar um Dashboard
 
@@ -682,6 +737,24 @@ lab-observabilidade/
 - `tasks_active` - Tarefas ativas (Gauge)
 - `api_requests_total` - Requisições à API
 
+### Métricas de Host (Infraestrutura)
+
+**Node Exporter (Linux/WSL):**
+- `node_cpu_seconds_total` - Uso de CPU por core e modo
+- `node_memory_*` - Memória (total, disponível, buffers, cache)
+- `node_load1`, `node_load5`, `node_load15` - Load average do sistema
+- `node_network_*` - Tráfego de rede (bytes enviados/recebidos)
+- `node_disk_*` - I/O de disco (reads, writes)
+- ⚠️ `node_filesystem_*` - **Não disponível no WSL2** (limitação do filesystem 9p)
+
+**Windows Exporter (Host Windows):**
+- `windows_cpu_*` - Uso de CPU, clock, interrupts
+- `windows_memory_*` - Memória física, cache, swap
+- `windows_logical_disk_*` - Uso de disco por volume
+- `windows_net_*` - Tráfego de rede
+- `windows_system_*` - Processos, threads, uptime
+- `windows_iis_*` - Métricas do IIS (se instalado): conexões, requests, pools
+
 ---
 
 ## 📝 Logs Coletados
@@ -701,7 +774,46 @@ lab-observabilidade/
 
 ---
 
+## ⚠️ Limitações Conhecidas
+
+### WSL2 e Filesystem 9p
+
+O **Node Exporter** no WSL2 não consegue coletar métricas de disco devido a uma incompatibilidade com o filesystem tipo **9p** (Plan 9 Protocol) usado pelo WSL2 para montar o sistema de arquivos do Windows.
+
+**Impacto:**
+- Métricas `node_filesystem_*` não estão disponíveis no dashboard WSL
+- O painel "Disk Usage" foi substituído por uma mensagem informativa
+- Outras métricas (CPU, memória, rede, I/O) funcionam normalmente
+
+**Solução:**
+- Para monitorar uso de disco, utilize o **dashboard "HOST Windows + IIS"**
+- O Windows Exporter coleta todas as métricas de disco corretamente
+
+**Detalhes técnicos:**
+- Erro no Node Exporter: `"error parsing file: couldn't find separator in expected field: 9p"`
+- Configuração aplicada: `--collector.filesystem.fs-types-exclude=^(...|9p)$`
+
+### Queries de CPU no WSL2
+
+A função `rate()` do PromQL pode retornar valores incorretos (>100%) para métricas de CPU no WSL2.
+
+**Solução aplicada:**
+- Dashboards usam `irate()` ao invés de `rate()` para queries de CPU
+- Query correta: `100 - (avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)`
+
+### Métricas do IIS
+
+O dashboard "HOST Windows + IIS" inclui painéis para métricas do **Internet Information Services (IIS)**, mas essas métricas só retornarão dados se o IIS estiver instalado e rodando no Windows.
+
+**Comportamento esperado:**
+- Sem IIS: Painéis de IIS ficarão vazios
+- Com IIS: Métricas completas de conexões, requests, pools, etc.
+
+---
+
 ## 🚀 Próximos Passos
+
+> 📋 **Nota**: Todas as melhorias listadas abaixo foram adicionadas ao backlog do projeto como tarefas detalhadas. Para ver as tarefas completas com acceptance criteria, use: `backlog task list --plain`
 
 ### Melhorias Possíveis
 

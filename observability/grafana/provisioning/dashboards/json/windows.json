@@ -1031,7 +1031,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "WINDOWS + IIS - Monitoramento",
+  "title": "HOST Windows + IIS - Monitoramento",
   "uid": "windows-iis-monitoring",
   "version": 1
 }
