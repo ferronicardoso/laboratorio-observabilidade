@@ -54,21 +54,20 @@ export const options = {
   },
 };
 
-const SERVICES = {
-  dotnet: 'http://localhost:5000',
-  python: 'http://localhost:8001',
-  java: 'http://localhost:8002',
-  nextjs: 'http://localhost:3001',
-};
+const SERVICES = [
+  { name: 'dotnet', url: 'http://localhost:5000', endpoint: '/weatherforecast' },
+  { name: 'python', url: 'http://localhost:8001', endpoint: '/health' },
+  { name: 'java', url: 'http://localhost:8002', endpoint: '/health' },
+  { name: 'nextjs', url: 'http://localhost:3001', endpoint: '/api/health' },
+];
 
 export default function () {
   // Escolhe um serviço aleatório
-  const services = Object.values(SERVICES);
-  const service = services[Math.floor(Math.random() * services.length)];
+  const service = SERVICES[Math.floor(Math.random() * SERVICES.length)];
 
   // Faz requisição
-  let res = http.get(`${service}/health`, {
-    tags: { service: service.split(':')[2].split('/')[0] },
+  let res = http.get(`${service.url}${service.endpoint}`, {
+    tags: { service: service.name },
   });
 
   check(res, {

@@ -46,7 +46,7 @@ public static class DataSeeder
 
             var product = new Product
             {
-                Id = i,
+                // Id será gerado automaticamente pelo banco
                 Name = $"{brand} {adjective} {category} {i}",
                 Description = GenerateDescription(brand, category, adjective, random),
                 Price = GeneratePrice(category, random),

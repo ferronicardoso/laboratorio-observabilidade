@@ -4,8 +4,21 @@ using OpenTelemetry.Resources;
 using System.Diagnostics.Metrics;
 using Microsoft.EntityFrameworkCore;
 using dotnet_api.Data;
+using Serilog;
+using Serilog.Formatting.Compact;
+using Serilog.Enrichers.Span;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configurar Serilog para logging estruturado em JSON
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .Enrich.WithSpan()  // Adiciona TraceId e SpanId automaticamente
+    .Enrich.WithProperty("ServiceName", "dotnet-api")
+    .WriteTo.Console(new CompactJsonFormatter())
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 // Configurar DbContext com PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -90,6 +103,9 @@ builder.Services.AddOpenTelemetry()
 
 var app = builder.Build();
 
+// Log inicial da aplicação
+Log.Information("Iniciando dotnet-api com logging estruturado");
+
 // Criar banco e seed automaticamente
 using (var scope = app.Services.CreateScope())
 {
@@ -98,9 +114,9 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<AppDbContext>();
 
-        // EnsureCreated cria o banco e todas as tabelas
-        await context.Database.EnsureCreatedAsync();
-        app.Logger.LogInformation("Database criado com sucesso");
+        // Aplicar migrations (cria banco e tabelas com configurações corretas)
+        await context.Database.MigrateAsync();
+        app.Logger.LogInformation("Database migrations aplicadas com sucesso");
 
         // Fazer seed de dados
         await DataSeeder.SeedData(context, app.Logger);
@@ -150,7 +166,19 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast");
 
-app.Run();
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Aplicação encerrada inesperadamente");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {

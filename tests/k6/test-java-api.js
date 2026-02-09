@@ -17,7 +17,7 @@ const BASE_URL = 'http://localhost:8002';
 
 export default function () {
   // Teste do endpoint health
-  let healthRes = http.get(`${BASE_URL}/api/health`);
+  let healthRes = http.get(`${BASE_URL}/actuator/health`);
   check(healthRes, {
     'health status is 200': (r) => r.status === 200,
     'health status is UP': (r) => r.json('status') === 'UP',
