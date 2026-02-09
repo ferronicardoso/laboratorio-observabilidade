@@ -746,7 +746,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 6,
         "x": 18,
         "y": 8
@@ -796,5 +796,5 @@
   "timezone": "browser",
   "title": "Nginx - Overview",
   "uid": "adlb28d",
-  "version": 1
+  "version": 2
 }
