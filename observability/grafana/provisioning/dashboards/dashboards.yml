@@ -1,9 +1,9 @@
 apiVersion: 1
 
 providers:
-  - name: 'Lab Observabilidade'
+  - name: 'Laboratório de Observabilidade'
     orgId: 1
-    folder: 'Lab Observabilidade'
+    folder: 'Laboratório de Observabilidade'
     type: file
     disableDeletion: false
     updateIntervalSeconds: 10

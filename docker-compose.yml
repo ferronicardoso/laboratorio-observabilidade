@@ -10,6 +10,14 @@ services:
       - "8080:80"
     networks:
       - obs-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
 
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:latest
@@ -22,6 +30,14 @@ services:
       - obs-net
     depends_on:
       - nginx
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.25'
+    #       memory: 128M
+    #     reservations:
+    #       cpus: '0.1'
+    #       memory: 64M
 
   dotnet-api:
     build:
@@ -35,10 +51,18 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=observability_lab;Username=labuser;Password=labpass
+      - ConnectionStrings__DefaultConnection=Server=mssqlserver;Database=observability_lab;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True
     depends_on:
-      postgres:
+      mssqlserver:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   python-api:
     build:
@@ -49,6 +73,22 @@ services:
       - "8001:8000"
     networks:
       - obs-net
+    environment:
+      - DATABASE_URL=postgresql://labuser:labpass@postgres:5432/observability_lab
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      alloy:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   java-api:
     build:
@@ -61,6 +101,20 @@ services:
       - obs-net
     environment:
       - SPRING_PROFILES_ACTIVE=default
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/observability_lab
+      - SPRING_DATASOURCE_USERNAME=labuser
+      - SPRING_DATASOURCE_PASSWORD=labpass
+    depends_on:
+      mysql:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   nextjs-app:
     build:
@@ -73,6 +127,14 @@ services:
       - obs-net
     environment:
       - NODE_ENV=production
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   angular-app:
     build:
@@ -89,6 +151,14 @@ services:
       - python-api
       - java-api
       - nextjs-app
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
 
   prometheus:
     image: prom/prometheus:latest
@@ -104,6 +174,14 @@ services:
       - "9090:9090"
     networks:
       - obs-net
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 2G
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 512M
 
   loki:
     image: grafana/loki:latest
@@ -117,6 +195,14 @@ services:
       - "3100:3100"
     networks:
       - obs-net
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 1G
+    #     reservations:
+    #       cpus: '0.25'
+    #       memory: 256M
 
   tempo-init:
     image: alpine:latest
@@ -141,6 +227,14 @@ services:
     restart: unless-stopped
     depends_on:
       - tempo-init
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.25'
+    #       memory: 256M
 
   alloy:
     image: grafana/alloy:latest
@@ -162,6 +256,14 @@ services:
     depends_on:
       - loki
       - tempo
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.25'
+    #       memory: 256M
 
   grafana:
     image: grafana/grafana:latest
@@ -180,6 +282,14 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     networks:
       - obs-net
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.25'
+    #       memory: 256M
 
   node-exporter-linux:
     image: prom/node-exporter:latest
@@ -199,6 +309,14 @@ services:
     networks:
       - obs-net
     restart: unless-stopped
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.5'
+    #       memory: 256M
+    #     reservations:
+    #       cpus: '0.1'
+    #       memory: 128M
 
   postgres:
     image: postgres:18-alpine
@@ -219,22 +337,143 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: pgadmin
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@lab.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      DATA_SOURCE_NAME: "postgresql://labuser:labpass@postgres:5432/observability_lab?sslmode=disable"
     ports:
-      - "5050:80"
-    volumes:
-      - pgadmin-data:/var/lib/pgadmin
+      - "9187:9187"
     networks:
       - obs-net
+    restart: unless-stopped
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.25'
+    #       memory: 128M
+    #     reservations:
+    #       cpus: '0.1'
+    #       memory: 64M
+
+  mssqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: mssqlserver
+    environment:
+      SA_PASSWORD: "YourStrong!Passw0rd"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssqlserver-data:/var/opt/mssql
+    networks:
+      - obs-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd -Q 'SELECT 1' -C || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  mssql-exporter:
+    image: awaragi/prometheus-mssql-exporter:latest
+    container_name: mssql-exporter
+    environment:
+      SERVER: "mssqlserver"
+      PORT: 1433
+      USERNAME: "sa"
+      PASSWORD: "YourStrong!Passw0rd"
+      DEBUG: "false"
+    ports:
+      - "4000:4000"
+    networks:
+      - obs-net
+    restart: unless-stopped
+    depends_on:
+      mssqlserver:
+        condition: service_healthy
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.25'
+    #       memory: 128M
+    #     reservations:
+    #       cpus: '0.1'
+    #       memory: 64M
+
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "rootpass"
+      MYSQL_DATABASE: "observability_lab"
+      MYSQL_USER: "labuser"
+      MYSQL_PASSWORD: "labpass"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - obs-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  mysql-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: mysql-exporter
+    command:
+      - "--config.my-cnf=/etc/.my.cnf"
+    volumes:
+      - ./observability/mysql-exporter/.my.cnf:/etc/.my.cnf:ro
+    ports:
+      - "9104:9104"
+    networks:
+      - obs-net
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.25'
+    #       memory: 128M
+    #     reservations:
+    #       cpus: '0.1'
+    #       memory: 64M
 
 networks:
   obs-net:
@@ -246,4 +485,5 @@ volumes:
   tempo-data:
   prometheus-data:
   postgres-data:
-  pgadmin-data:
+  mssqlserver-data:
+  mysql-data:

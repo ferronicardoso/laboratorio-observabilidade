@@ -47,8 +47,8 @@ docker compose up -d
 
 ### 2. Abrir o Grafana
 - http://localhost:3000 (admin/admin)
-- Abra o dashboard "Multi-Language Overview"
-- Configure refresh: **5s**
+- Abra um dos dashboards de overview
+- Configure refresh: **10s**
 
 ### 3. Executar teste
 ```bash
@@ -69,7 +69,9 @@ Você verá em tempo real:
 
 ## 📜 Scripts Disponíveis
 
-### 1. `test-dotnet-api.js` - API .NET
+### Testes Básicos por API
+
+#### 1. `test-dotnet-api.js` - API .NET
 Testa endpoints da API .NET com diferentes cargas.
 
 ```bash
@@ -78,45 +80,242 @@ k6 run test-dotnet-api.js
 
 # Teste de stress (50 VUs por 2min)
 k6 run --vus 50 --duration 2m test-dotnet-api.js
-
-# Teste de spike (0→100 VUs em 10s)
-k6 run --stage 10s:100 --stage 20s:100 --stage 10s:0 test-dotnet-api.js
 ```
 
-### 2. `test-python-api.js` - API Python
+#### 2. `test-python-api.js` - API Python
 Testa FastAPI com simulação de workload realista.
 
 ```bash
 k6 run test-python-api.js
 ```
 
-### 3. `test-java-api.js` - API Java Spring Boot
+#### 3. `test-java-api.js` - API Java Spring Boot
 Testa endpoints de produtos e pedidos.
 
 ```bash
 k6 run test-java-api.js
 ```
 
-### 4. `test-nextjs-app.js` - Next.js App
+#### 4. `test-nextjs-app.js` - Next.js App
 Testa API routes do Next.js.
 
 ```bash
 k6 run test-nextjs-app.js
 ```
 
-### 5. `test-all-services.js` - Teste Completo
+#### 5. `test-all-services.js` - Teste Completo
 Testa todos os serviços simultaneamente (cenário mais realista).
 
 ```bash
 k6 run test-all-services.js
 ```
 
-### 6. `load-test-scenarios.js` - Cenários Avançados
+#### 6. `load-test-scenarios.js` - Cenários Avançados
 Múltiplos cenários de carga com diferentes perfis (carga constante, rampa, spike).
 
 ```bash
 k6 run load-test-scenarios.js
 ```
+
+---
+
+## ⚡ Spike Tests - Testes de Picos de Carga
+
+### O que é um Spike Test?
+
+Um **spike test** simula um **aumento súbito e extremo** de tráfego para avaliar como o sistema se comporta sob picos inesperados de carga.
+
+#### Diferenças entre tipos de teste:
+
+| Tipo | Objetivo | Perfil de Carga |
+|------|----------|-----------------|
+| **Load Test** | Testar comportamento sob carga esperada | Aumento gradual e constante |
+| **Stress Test** | Encontrar limite máximo do sistema | Aumento gradual até quebrar |
+| **Spike Test** | Testar resiliência a picos súbitos | Aumento drástico instantâneo |
+| **Soak Test** | Testar estabilidade prolongada | Carga constante por horas |
+
+### Perfil do Spike Test
+
+```
+VUs
+500 │                  ┌─────────────┐
+    │                 ╱               ╲
+    │                ╱                 ╲
+ 50 │──────────────╱                   ╲──────────
+    │             ╱                     ╲
+  0 └────────────┴───────────────────────┴────────
+     0s   10s  15s        45s         50s      60s
+
+     Fase 1: Ramp-up (10s) - 0 → 50 VUs
+     Fase 2: SPIKE (5s) - 50 → 500 VUs  ⚡
+     Fase 3: Sustentação (30s) - 500 VUs
+     Fase 4: Ramp-down (5s) - 500 → 50 VUs
+     Fase 5: Cooldown (10s) - 50 → 0 VUs
+```
+
+### Scripts de Spike Test Disponíveis:
+
+#### .NET API
+```bash
+# Via script automático (recomendado)
+./tests/spike-test-dotnet.sh
+
+# Via k6 direto
+k6 run tests/k6/spike-test-dotnet.js
+```
+
+#### Java API
+```bash
+# Via script automático
+./tests/spike-test-java.sh
+
+# Via k6 direto
+k6 run tests/k6/spike-test-java.js
+```
+
+#### Python API
+```bash
+# Via script automático
+./tests/spike-test-python.sh
+
+# Via k6 direto
+k6 run tests/k6/spike-test-python.js
+```
+
+### Critérios de Sucesso
+
+O sistema passa no spike test se:
+
+1. ✅ **Disponibilidade**: Permanece UP durante todo o teste
+2. ✅ **Taxa de Erro**: < 10% durante o spike
+3. ✅ **Latência P95**: < 2000ms durante o spike
+4. ✅ **Recuperação**: Sistema volta ao normal após o spike
+5. ✅ **Sem Crashes**: Nenhum container reinicia
+
+---
+
+## 💥 Chaos Tests - Testes Extremos
+
+### O que é um Chaos Test?
+
+Um **chaos test** leva o sistema ao **limite absoluto** com carga extrema (5000 VUs) para **forçar erros** e encontrar pontos de falha.
+
+### Perfil do Chaos Test
+
+```
+VUs
+5000│         ┌───────────────────┐
+    │        ╱                     ╲
+    │       ╱                       ╲
+ 500│──────╱                         ╲────
+    │     ╱                           ╲
+   0└────┴─────────────────────────────┴──
+     0s  5s  10s                  30s  35s
+
+     Fase 1: Warm-up (5s) - 0 → 500 VUs
+     Fase 2: CAOS (5s) - 500 → 5000 VUs  💥
+     Fase 3: Mantém CAOS (20s) - 5000 VUs
+     Fase 4: Crash (5s) - 5000 → 0 VUs
+```
+
+### Scripts de Chaos Test Disponíveis:
+
+#### .NET API
+```bash
+# ⚠️ ATENÇÃO: Teste extremamente agressivo!
+./tests/chaos-test-dotnet.sh
+```
+
+#### Java API
+```bash
+./tests/chaos-test-java.sh
+```
+
+#### Python API
+```bash
+./tests/chaos-test-python.sh
+```
+
+### ⚠️ Avisos Importantes
+
+O Chaos Test:
+- Pode **TRAVAR a API** temporariamente
+- CPU vai a **100%** em múltiplos cores
+- Memória pode **esgotar**
+- Sistema operacional pode ficar **lento**
+- Pode precisar **reiniciar containers** após o teste
+
+### Objetivo
+
+O objetivo é **FORÇAR erros** para:
+- Validar tratamento de erros sob carga extrema
+- Testar circuit breakers e rate limiting
+- Encontrar memory leaks
+- Verificar limites de recursos
+- Testar recuperação do sistema
+
+---
+
+## 🗄️ Testes de Database Monitoring
+
+Scripts k6 para validar métricas de bancos de dados via Prometheus.
+
+### 7. `test-postgres-metrics.js` - PostgreSQL
+
+Valida métricas do PostgreSQL Exporter + gera tráfego na API.
+
+```bash
+k6 run test-postgres-metrics.js
+```
+
+**Métricas validadas:**
+- ✅ Status do PostgreSQL Exporter (pg_up)
+- ✅ Conexões ativas
+- ✅ Cache Hit Ratio (threshold > 90%)
+- ✅ Tamanho do banco de dados
+- ✅ Taxa de commits
+- ✅ Locks
+
+### 8. `test-mssql-metrics.js` - SQL Server
+
+Valida métricas do SQL Server Exporter.
+
+```bash
+k6 run test-mssql-metrics.js
+```
+
+**Métricas validadas:**
+- ✅ Status do SQL Server Exporter (mssql_up)
+- ✅ Conexões
+- ✅ Buffer Cache Hit Ratio (threshold > 80%)
+- ✅ Batch Requests/s
+- ✅ Uso de Memória
+- ✅ Deadlocks
+
+### 9. `test-mysql-metrics.js` - MySQL
+
+Valida métricas do MySQL Exporter.
+
+```bash
+k6 run test-mysql-metrics.js
+```
+
+**Métricas validadas:**
+- ✅ Status do MySQL Exporter (mysql_up)
+- ✅ Conexões e threads
+- ✅ Queries por segundo
+- ✅ Slow queries
+- ✅ Uptime
+
+### Arquitetura Multi-Banco
+
+O lab demonstra observabilidade em 3 bancos diferentes:
+
+| Aplicação | Banco de Dados | Porta | Exporter | Dashboard |
+|-----------|---------------|-------|----------|-----------|
+| **.NET API** | SQL Server 2019 | 1433 | 4000 | overview-dotnet |
+| **Python API** | PostgreSQL 18 | 5432 | 9187 | overview-python |
+| **Java API** | MySQL | 3306 | 9104 | overview-java |
 
 ---
 
@@ -130,7 +329,6 @@ k6 run load-test-scenarios.js
 k6 run test-dotnet-api.js
 k6 run test-python-api.js
 k6 run test-java-api.js
-k6 run test-nextjs-app.js
 ```
 
 **Anote para cada API:**
@@ -145,15 +343,63 @@ k6 run test-nextjs-app.js
 
 ---
 
-### 🟡 Nível 2: Stress Test (10 minutos)
-**Objetivo**: Encontrar o limite de cada API.
+### 🟡 Nível 2: Spike Test (10 minutos)
+**Objetivo**: Ver como cada API reage a picos repentinos de carga.
 
 ```bash
-# Aumentar progressivamente a carga na API .NET
-k6 run --vus 10 --duration 1m test-dotnet-api.js   # Anote o P95
-k6 run --vus 25 --duration 1m test-dotnet-api.js   # Anote o P95
-k6 run --vus 50 --duration 1m test-dotnet-api.js   # Anote o P95
-k6 run --vus 100 --duration 1m test-dotnet-api.js  # Anote o P95
+# Testar cada API com spike
+./tests/spike-test-dotnet.sh
+./tests/spike-test-java.sh
+./tests/spike-test-python.sh
+```
+
+**Observe:**
+- ⚡ Latência durante o spike (primeiros 15s)
+- ⏳ Tempo de recuperação após spike
+- ❌ Taxa de erros durante o pico
+- 📊 Comportamento do CPU/memória
+
+**Compare:**
+- Qual API aguenta melhor o spike?
+- Qual tem recuperação mais rápida?
+- Alguma API teve > 10% de erros?
+
+---
+
+### 🔴 Nível 3: Chaos Test (15 minutos)
+**Objetivo**: Forçar erros e encontrar limites absolutos.
+
+```bash
+# ⚠️ CUIDADO: Teste extremamente agressivo!
+./tests/chaos-test-dotnet.sh
+./tests/chaos-test-java.sh
+./tests/chaos-test-python.sh
+```
+
+**Observe no Grafana:**
+- 🔴 Taxa de Erros (deve subir significativamente)
+- 🔥 CPU (vai saturar)
+- 💾 Memória (pode esgotar)
+- 🗄️ Database (conexões, locks, deadlocks)
+- 📝 Logs (explosão de erros)
+
+**Análise:**
+- Qual API colapsou primeiro?
+- Qual banco teve mais problemas?
+- O sistema recuperou após o teste?
+
+---
+
+### ⚫ Nível 4: Stress Test / Soak Test (15 minutos)
+
+**Opção A - Stress Test (Encontrar limite):**
+
+```bash
+# Aumentar progressivamente a carga
+k6 run --vus 10 --duration 1m test-dotnet-api.js
+k6 run --vus 25 --duration 1m test-dotnet-api.js
+k6 run --vus 50 --duration 1m test-dotnet-api.js
+k6 run --vus 100 --duration 1m test-dotnet-api.js
 ```
 
 **Observe quando:**
@@ -161,48 +407,7 @@ k6 run --vus 100 --duration 1m test-dotnet-api.js  # Anote o P95
 - ❌ Taxa de erros aumenta
 - 🔥 CPU/memória satura
 
-**Perguntas:**
-- Em que ponto (quantos VUs) a API satura?
-- A degradação é gradual ou abrupta?
-- Aparecem erros HTTP?
-
----
-
-### 🔴 Nível 3: Spike Test (10 minutos)
-**Objetivo**: Ver como o sistema reage a picos repentinos de carga.
-
-```bash
-k6 run --stage 5s:0 --stage 5s:100 --stage 30s:100 --stage 5s:0 test-all-services.js
-```
-
-**Observe:**
-- ⚡ Latência durante o spike (primeiros 10s)
-- ⏳ Tempo de recuperação após spike
-- ❌ Erros durante o pico
-- 📊 Comportamento do CPU/memória
-
-**Queries úteis no Grafana Explore:**
-
-```promql
-# Taxa de requisições durante spike
-rate(http_server_request_duration_seconds_count{job="dotnet-api"}[30s])
-
-# Latência máxima
-max(http_server_request_duration_seconds{job="dotnet-api"})
-```
-
-**Abra múltiplos dashboards:**
-- Multi-Language Overview
-- .NET API
-- Python API
-- Java API
-- APIs - Logs Consolidados
-
----
-
-### ⚫ Nível 4: Soak Test / Cenários Avançados (15 minutos)
-
-**Opção A - Soak Test (Teste de Longa Duração):**
+**Opção B - Soak Test (Longa duração):**
 
 ```bash
 # 10 minutos com carga constante
@@ -213,22 +418,6 @@ k6 run --vus 20 --duration 10m test-all-services.js
 - 📈 Uso de memória crescente (possível leak)
 - ⏱️ Degradação de latência ao longo do tempo
 - 🔄 Estabilidade dos containers
-
-**Opção B - Cenários Múltiplos:**
-
-```bash
-k6 run load-test-scenarios.js
-```
-
-Este teste dura ~7 minutos e executa:
-1. **Carga constante** (baseline)
-2. **Rampa de carga** (escalabilidade)
-3. **Spike test** (resiliência)
-
-**Análise:**
-- Compare latências entre cenários
-- Identifique qual serviço é mais afetado por spike
-- Verifique se há memory leaks
 
 ---
 
@@ -273,24 +462,17 @@ histogram_quantile(0.95, rate(http_server_request_duration_seconds_bucket{job="d
 - ✅ Confirme que o teste está rodando
 - ✅ Check se o job label está correto
 
-### Passo a Passo para Comparar
-
-1. **No k6**, anote o timestamp do teste e o P95
-2. **No Grafana**, vá para o dashboard da API testada
-3. **Ajuste o time range** para o período do teste
-4. **Compare**:
-   - Latência k6 vs Prometheus (devem ser similares)
-   - Request rate k6 vs Prometheus
-   - Erros k6 vs logs no Loki
-
 ---
 
 ## 📊 Monitorando os Testes no Grafana
 
 ### Antes de executar:
 1. Acesse o Grafana: http://localhost:3000
-2. Abra o dashboard da API que será testada
-3. Ajuste o time range para "Last 5 minutes" com auto-refresh de **5s**
+2. Abra o dashboard da API que será testada:
+   - **overview-dotnet** - .NET API + SQL Server
+   - **overview-java** - Java API + MySQL
+   - **overview-python** - Python API + PostgreSQL
+3. Ajuste o time range para "Last 5 minutes" com auto-refresh de **10s**
 
 ### Métricas para observar:
 
@@ -299,14 +481,18 @@ histogram_quantile(0.95, rate(http_server_request_duration_seconds_bucket{job="d
 - **Response Time**: P50, P95, P99
 - **Error Rate**: % de erros HTTP (4xx, 5xx)
 - **CPU/Memory**: Uso de recursos do container
+- **Database**: Conexões, cache hit ratio, operações
 
 **Queries úteis no Grafana Explore (PromQL):**
 
 ```promql
-# Taxa de requisições
+# Taxa de requisições (.NET)
 rate(http_server_request_duration_seconds_count{job="dotnet-api"}[1m])
 
-# Latência P95
+# Taxa de requisições (Java)
+rate(http_server_requests_seconds_count{job="java-api"}[1m])
+
+# Latência P95 (.NET)
 histogram_quantile(0.95, rate(http_server_request_duration_seconds_bucket{job="dotnet-api"}[1m]))
 
 # Taxa de erros (5xx)
@@ -318,6 +504,8 @@ rate(http_server_request_duration_seconds_count{job="dotnet-api",http_response_s
 ```logql
 # Logs da API durante teste
 {container="dotnet-api"}
+{container="java-api"}
+{container="python-api"}
 
 # Apenas logs de erro
 {container="dotnet-api"} |= "error"
@@ -369,12 +557,13 @@ Após completar os exercícios, você deve ser capaz de:
 
 - ✅ Instalar e executar k6
 - ✅ Interpretar métricas de latência (P50, P95, P99)
-- ✅ Criar testes de carga customizados
+- ✅ Diferenciar tipos de teste (load, stress, spike, soak, chaos)
+- ✅ Executar spike tests e chaos tests
 - ✅ Identificar gargalos de performance
 - ✅ Correlacionar dados k6 com métricas do Prometheus
 - ✅ Usar logs do Loki para debug de erros durante testes
-- ✅ Executar diferentes tipos de teste (load, stress, spike, soak)
 - ✅ Estabelecer baselines de performance
+- ✅ Validar métricas de bancos de dados
 - ✅ Definir quando um sistema está degradando
 
 ---
@@ -387,9 +576,9 @@ Após completar os exercícios, você deve ser capaz de:
 docker compose ps
 
 # Testar conectividade manualmente
-curl http://localhost:5000/health
-curl http://localhost:8001/health
-curl http://localhost:8002/api/health
+curl http://localhost:5000/health    # .NET API
+curl http://localhost:8001/health    # Python API
+curl http://localhost:8002/health    # Java API
 ```
 
 ### Resultados inconsistentes
@@ -406,6 +595,7 @@ docker stats
 # Verificar logs dos containers
 docker logs dotnet-api
 docker logs python-api
+docker logs java-api
 ```
 
 ### Timeouts
@@ -417,13 +607,15 @@ export let options = {
 };
 ```
 
-### k6 não instalado
+### Sistema não recupera após chaos test
 ```bash
-# Verificar instalação
-k6 version
+# Reiniciar containers afetados
+docker compose restart dotnet-api
+docker compose restart java-api
+docker compose restart python-api
 
-# Se não instalado, use Docker:
-alias k6='docker run --rm -i --network=host grafana/k6'
+# Verificar logs
+docker logs dotnet-api --tail 50
 ```
 
 ---
@@ -438,22 +630,27 @@ Depois de dominar k6 e completar os exercícios:
 2. ✅ **Criar alertas no Grafana** quando métricas ultrapassam baseline
    - Ex: alerta quando P95 > 500ms
 
-3. ✅ **Implementar Distributed Tracing** (task-001 do backlog)
-   - Rastrear requisições através dos serviços
+3. ✅ **Implementar Circuit Breakers** para proteger contra overload
+   - Rate limiting nas APIs
+   - Fallback responses
 
-4. ✅ **Adicionar Continuous Profiling** (task-004 do backlog)
-   - Identificar hotspots de CPU/memória
+4. ✅ **Otimizar performance** baseado nos gargalos encontrados
+   - Database indexing
+   - Caching
+   - Connection pooling
 
-5. ✅ **Integrar k6 no CI/CD** (task-006 do backlog)
+5. ✅ **Integrar k6 no CI/CD**
    - Executar testes automaticamente em cada deploy
+   - Bloquear deploy se performance degradar
 
 ### Recursos Adicionais
 
 - **Documentação k6**: https://k6.io/docs/
 - **k6 Examples**: https://k6.io/docs/examples/
-- **Grafana k6 Cloud** (opcional): https://grafana.com/products/cloud/k6/
+- **Test Types Guide**: https://k6.io/docs/test-types/
 - **k6 Extensions**: https://k6.io/docs/extensions/
+- **Grafana k6 Cloud** (opcional): https://grafana.com/products/cloud/k6/
 
 ---
 
-**Parabéns! Você agora sabe usar k6 para testes de carga!** 🎉
+**Parabéns! Você agora sabe usar k6 para testes de carga completos!** 🎉

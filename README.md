@@ -51,7 +51,8 @@ O projeto implementa uma stack completa de observabilidade usando ferramentas op
 - ✅ **Frontend Angular** com Real User Monitoring (Grafana Faro)
 - ✅ **Stack Grafana completa** (Prometheus, Loki, Tempo, Alloy, Grafana, Faro)
 - ✅ **Distributed Tracing** com Grafana Tempo e OpenTelemetry
-- ✅ **PostgreSQL 18** com 1000 produtos para traces realistas
+- ✅ **3 Bancos de Dados** (PostgreSQL, SQL Server, MySQL) com exporters de métricas
+- ✅ **Database Monitoring** completo com dashboards dedicados
 - ✅ **OpenTelemetry** para padronização
 - ✅ **Dashboards customizados** no Grafana
 - ✅ **Docker Compose** para fácil execução
@@ -111,52 +112,78 @@ Este laboratório foi criado para ensinar:
 
 ```mermaid
 graph TB
-   subgraph Applications["🔧 APLICAÇÕES"]
-      Nginx["Nginx<br/>porta 80"]
-      DotNet["dotnet-api<br/>C# .NET<br/>porta 5000"]
-      Python["python-api<br/>Python/FastAPI<br/>porta 8001"]
-      Java["java-api<br/>Java/Spring<br/>porta 8002"]
-      NextJS["nextjs-app<br/>Next.js<br/>porta 3001"]
-      Angular["angular-app<br/>Angular 18<br/>porta 4200"]
+   subgraph Databases["BANCO DE DADOS"]
+      MySql["MySQL"]
+      Postgres["PostgreSQL"]
+      MsSqlServer["SQL Server"]
    end
 
-   subgraph Exporters["📤 EXPORTERS"]
-      NginxExp["nginx-exporter<br/>porta 9113"]
+   subgraph ReverseProxy["PROXY REVERSO"]
+      Nginx["Nginx"]
    end
 
-   subgraph Observability["📊 OBSERVABILIDADE"]
-      Prometheus["Prometheus<br/>porta 9090"]
-      Loki["Loki<br/>porta 3100"]
-      Alloy["Grafana Alloy<br/>porta 12345/12347"]
+   subgraph Frontends["APLICAÇÕES FRONTEND"]
+      NextJS["Next.js App"]
+      Angular["Angular App"]
    end
 
-   subgraph Visualization["📈 VISUALIZAÇÃO"]
-      Grafana["Grafana<br/>porta 3000"]
+   subgraph Backends["APLICAÇÕES BACKEND"]
+      DotNet[".NET API"]
+      Python["Python API"]
+      Java["Java API"]
    end
 
-   Nginx -->|scrape| NginxExp
-   NginxExp -->|metrics| Prometheus
-   DotNet -->|/metrics| Prometheus
-   Python -->|/metrics| Prometheus
-   Java -->|/metrics| Prometheus
-   NextJS -->|/metrics| Prometheus
+   subgraph Exporters["EXPORTERS"]
+      NginxExp["Nginx Exporter"]
+      NodeExp["Linux Exporter"]
+      WinExp["Windows Exporter"]
+      MySqlExp["MySQL Exporter"]
+      PostgresExp["PostgreSQL Exporter"]
+      MsSqlServerExp["SQL Server Exporter"]
+   end
 
-   Nginx -->|logs| Alloy
-   DotNet -->|logs| Alloy
-   Python -->|logs| Alloy
-   Java -->|logs| Alloy
-   NextJS -->|logs| Alloy
-   Angular -->|Faro SDK<br/>RUM| Alloy
+   subgraph Observability["OBSERVABILIDADE"]
+      Prometheus["Prometheus<br/>(Métricas)"]
+      Loki["Loki<br/>(Logs)"]
+      Tempo["Tempo<br/>(Traces)"]
+      Alloy["Grafana Alloy<br/>(Logs & Traces)"]
+   end
 
-   Alloy -->|push| Loki
+   subgraph Visualization["VISUALIZAÇÃO"]
+      Grafana["Grafana<br/>(Dashboards)"]
+   end
+
+   Frontends -->|API calls| Backends
+   Backends -->|connect| Databases
+
+   Databases -.->|scrape| Exporters
+
+   Exporters -->|metrics| Prometheus
+   Backends -->|metrics| Prometheus
+   Frontends -->|metrics| Prometheus
+
+   ReverseProxy -->|logs| Alloy
+   Backends -->|logs| Alloy
+   Frontends -->|logs| Alloy
+
+   Backends -->|traces| Alloy
+
+   Alloy -->|traces| Tempo
+
+   Alloy -->|push logs| Loki
+   Tempo -->|span metrics| Prometheus
 
    Prometheus -->|query| Grafana
    Loki -->|query| Grafana
+   Tempo -->|query| Grafana
 
-   style Applications fill:#e1f5ff
-   style Exporters fill:#fff3e0
-   style Observability fill:#f3e5f5
+   style ReverseProxy fill:#5ac5fa
+   style Backends fill:#c8e6c9
+   style Frontends fill:#ffe0b2
+   style Exporters fill:#d1c4e9
+   style Observability fill:#f8bbd0
    style Visualization fill:#e8f5e9
+   style Databases fill:#ffccbc
 ```
 
 ### Fluxo de Dados
@@ -211,10 +238,12 @@ graph TB
 
 ### Banco de Dados
 
-| Serviço | Tecnologia | Versão | Porta | Descrição |
-|---------|------------|--------|-------|-----------|
-| **PostgreSQL** | PostgreSQL | 18-alpine | 5432 | Banco de dados com 1000 produtos para traces realistas |
-| **pgAdmin** | pgAdmin 4 | latest | 5050 | Interface de gerenciamento PostgreSQL |
+| Serviço | Tecnologia | Versão | Porta | Aplicação | Exporter |
+|---------|------------|--------|-------|-----------|----------|
+| **PostgreSQL** | PostgreSQL | latest | 5432 | Python API | PostgreSQL Exporter (9187) |
+| **SQL Server** | MS SQL Server | 2019 | 1433 | .NET API | MSSQL Exporter (4000) |
+| **MySQL** | MySQL | latest | 3306 | Java API | MySQL Exporter (9104) |
+| **pgAdmin** | pgAdmin 4 | latest | 5050 | Gerenciamento PostgreSQL | - |
 
 ### Infraestrutura
 

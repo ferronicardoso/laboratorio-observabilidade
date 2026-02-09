@@ -7,15 +7,16 @@ import uvicorn
 import logging
 
 # Configurar observabilidade
-from observability import setup_metrics, instrument_app, get_meter
+from observability import setup_metrics, setup_tracing, instrument_app, get_meter
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Setup OpenTelemetry
+# Setup OpenTelemetry - Métricas e Tracing
 setup_metrics()
+setup_tracing()
 
 # Criar aplicação FastAPI
 app = FastAPI(

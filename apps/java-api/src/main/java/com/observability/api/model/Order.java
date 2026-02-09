@@ -1,14 +1,31 @@
 package com.observability.api.model;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Entity
+@Table(name = "orders")
 public class Order {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "customer_name", nullable = false)
     private String customerName;
+
+    @ElementCollection
+    @CollectionTable(name = "order_products", joinColumns = @JoinColumn(name = "order_id"))
+    @Column(name = "product_id")
     private List<Long> productIds;
+
+    @Column(name = "total_amount", nullable = false)
     private Double totalAmount;
+
+    @Column(nullable = false)
     private String status; // PENDING, PROCESSING, COMPLETED, CANCELLED
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     public Order() {
@@ -20,7 +37,14 @@ public class Order {
         this.productIds = productIds;
         this.totalAmount = totalAmount;
         this.status = "PENDING";
+    }
+
+    @PrePersist
+    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.status == null) {
+            this.status = "PENDING";
+        }
     }
 
     // Getters and Setters

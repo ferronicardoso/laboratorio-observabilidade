@@ -9,9 +9,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Este é um **laboratório educacional de observabilidade** que demonstra conceitos modernos de monitoramento, logging e métricas usando a Stack Grafana (Prometheus, Loki, Alloy, Grafana) com aplicações em múltiplas linguagens (.NET, Python, Java, TypeScript).
 
 **Stack:**
-- **Observabilidade**: Grafana, Prometheus, Loki, Grafana Tempo, Grafana Alloy, Node Exporter, Windows Exporter
+- **Observabilidade**: Grafana, Prometheus, Loki, Grafana Tempo, Grafana Alloy, Node Exporter, Windows Exporter, PostgreSQL Exporter, MSSQL Exporter, MySQL Exporter
 - **Aplicações**: .NET API, Python FastAPI, Java Spring Boot, Next.js, Angular, Nginx
-- **Banco de Dados**: PostgreSQL 18-alpine (1000 produtos para traces realistas)
+- **Bancos de Dados**: PostgreSQL (Python API), SQL Server 2019 (.NET API), MySQL (Java API)
 - **Infraestrutura**: Docker + Docker Compose
 
 ---
@@ -52,7 +52,12 @@ docker compose down && docker compose up -d --build
 - **Python API**: http://localhost:8001
 - **Java API**: http://localhost:8002
 - **Nginx**: http://localhost:8080
-- **PostgreSQL**: localhost:5432 (banco de dados)
+- **PostgreSQL**: localhost:5432 (labuser/labpass) - Python API
+- **SQL Server**: localhost:1433 (sa/YourStrong!Passw0rd) - .NET API
+- **MySQL**: localhost:3306 (labuser/labpass) - Java API
+- **PostgreSQL Exporter**: http://localhost:9187/metrics
+- **MSSQL Exporter**: http://localhost:4000/metrics
+- **MySQL Exporter**: http://localhost:9104/metrics
 
 ### Testar Métricas
 
@@ -64,6 +69,11 @@ curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job:
 curl http://localhost:5000/metrics  # .NET
 curl http://localhost:8001/metrics  # Python
 curl http://localhost:8002/actuator/prometheus  # Java
+
+# Ver métricas dos bancos de dados
+curl http://localhost:9187/metrics  # PostgreSQL
+curl http://localhost:4000/metrics  # SQL Server
+curl http://localhost:9104/metrics  # MySQL
 
 # Gerar tráfego para testes
 for i in {1..50}; do curl -s http://localhost:5000/weatherforecast > /dev/null; done
@@ -323,6 +333,442 @@ done
 
 ---
 
+## 🗄️ Database Monitoring (PostgreSQL)
+
+### PostgreSQL Exporter
+
+O projeto usa o **PostgreSQL Exporter** oficial para coletar métricas do banco de dados e enviá-las ao Prometheus.
+
+**Componentes:**
+- **postgres-exporter**: Coleta métricas do PostgreSQL
+- **Prometheus**: Armazena métricas via scrape (porta 9187)
+- **Grafana**: Dashboard com visualizações
+
+**Configuração:**
+```yaml
+# docker-compose.yml
+postgres-exporter:
+  image: quay.io/prometheuscommunity/postgres-exporter:latest
+  environment:
+    DATA_SOURCE_NAME: "postgresql://labuser:labpass@postgres:5432/observability_lab?sslmode=disable"
+  ports:
+    - "9187:9187"
+```
+
+### Métricas Disponíveis
+
+**Status e Disponibilidade:**
+- `pg_up` - Status do PostgreSQL (1 = UP, 0 = DOWN)
+
+**Conexões:**
+- `pg_stat_activity_count` - Conexões ativas, idle, etc.
+- `pg_stat_database_numbackends` - Número de backends conectados
+
+**Performance:**
+- `pg_stat_database_blks_hit` - Cache hits (blocos lidos do cache)
+- `pg_stat_database_blks_read` - Cache misses (blocos lidos do disco)
+- Cache Hit Ratio = `blks_hit / (blks_hit + blks_read) * 100`
+
+**Transações:**
+- `pg_stat_database_xact_commit` - Transações commitadas
+- `pg_stat_database_xact_rollback` - Transações com rollback
+
+**Operações de Dados:**
+- `pg_stat_database_tup_inserted` - Linhas inseridas
+- `pg_stat_database_tup_updated` - Linhas atualizadas
+- `pg_stat_database_tup_deleted` - Linhas deletadas
+
+**Armazenamento:**
+- `pg_database_size_bytes` - Tamanho do banco em bytes
+
+**Locks e Deadlocks:**
+- `pg_locks_count` - Número de locks por tipo
+- `pg_stat_database_deadlocks` - Deadlocks detectados
+
+### Queries PromQL Úteis
+
+```promql
+# Cache hit ratio (deve ser > 95%)
+sum(pg_stat_database_blks_hit{datname="observability_lab"}) /
+(sum(pg_stat_database_blks_hit{datname="observability_lab"}) +
+ sum(pg_stat_database_blks_read{datname="observability_lab"})) * 100
+
+# Transações por segundo
+rate(pg_stat_database_xact_commit{datname="observability_lab"}[1m])
+
+# Conexões ativas
+sum(pg_stat_activity_count{state="active"})
+
+# Taxa de inserts/updates/deletes
+rate(pg_stat_database_tup_inserted{datname="observability_lab"}[1m])
+rate(pg_stat_database_tup_updated{datname="observability_lab"}[1m])
+rate(pg_stat_database_tup_deleted{datname="observability_lab"}[1m])
+```
+
+### Dashboard do Grafana
+
+O dashboard **PostgreSQL - Database Monitoring** (`postgresql.json`) contém:
+
+**Primeira linha (Stats/Gauges):**
+- Status do PostgreSQL (UP/DOWN)
+- Conexões ativas
+- Conexões idle
+- Cache hit ratio (gauge 0-100%)
+- Tamanho do banco
+
+**Time Series:**
+- Conexões ao longo do tempo (total, active, idle)
+- Transações por segundo (commits vs rollbacks)
+- Backends conectados
+- Locks por tipo
+- Operações de tuplas (inserts, updates, deletes)
+- Deadlocks
+
+### Verificar Métricas
+
+```bash
+# Verificar se exporter está UP no Prometheus
+curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | select(.labels.job=="postgres")'
+
+# Ver métricas do PostgreSQL
+curl http://localhost:9187/metrics
+
+# Ver métricas específicas
+curl -s http://localhost:9187/metrics | grep pg_up
+curl -s http://localhost:9187/metrics | grep pg_stat_database_blks
+```
+
+### Gerar Tráfego no Banco
+
+```bash
+# Gerar queries para observar métricas
+for i in {1..20}; do
+  curl -s "http://localhost:5000/api/products?page=$((RANDOM % 10 + 1))&pageSize=10" > /dev/null
+  sleep 0.5
+done
+
+# Ver conexões ativas no Prometheus
+curl -s 'http://localhost:9090/api/v1/query?query=sum(pg_stat_activity_count{state="active"})' | jq '.data.result[0].value[1]'
+
+# Ver cache hit ratio no Prometheus
+curl -s 'http://localhost:9090/api/v1/query?query=sum(pg_stat_database_blks_hit{datname="observability_lab"})/(sum(pg_stat_database_blks_hit{datname="observability_lab"})+sum(pg_stat_database_blks_read{datname="observability_lab"}))*100' | jq '.data.result[0].value[1]'
+```
+
+### Troubleshooting Database Monitoring
+
+**Exporter não aparece no Prometheus:**
+1. Verificar se container está rodando: `docker ps | grep postgres-exporter`
+2. Verificar logs: `docker logs postgres-exporter`
+3. Verificar configuração: `DATA_SOURCE_NAME` deve estar correto
+4. Testar conexão: `docker exec postgres-exporter wget -qO- localhost:9187/metrics`
+
+**Métricas zeradas ou vazias:**
+1. Verificar se PostgreSQL está UP: `docker logs postgres`
+2. Verificar conexão do exporter ao banco: `docker logs postgres-exporter | grep -i error`
+3. Gerar tráfego na API para criar conexões/queries
+
+**Dashboard vazio:**
+1. Verificar se job `postgres` está no Prometheus: `http://localhost:9090/targets`
+2. Verificar queries no Grafana (usar Query Inspector)
+3. Ajustar time range (usar últimos 30 minutos)
+
+---
+
+## 🗄️ Database Monitoring (SQL Server)
+
+### SQL Server Exporter
+
+O projeto usa o **MSSQL Exporter** (awaragi/prometheus-mssql-exporter) para coletar métricas do SQL Server.
+
+**Componentes:**
+- **mssql-exporter**: Coleta métricas do SQL Server
+- **Prometheus**: Armazena métricas via scrape (porta 4000)
+- **Grafana**: Dashboard com visualizações
+
+**Configuração:**
+```yaml
+# docker-compose.yml
+mssqlserver:
+  image: mcr.microsoft.com/mssql/server:2019-latest
+  environment:
+    SA_PASSWORD: "YourStrong!Passw0rd"
+    ACCEPT_EULA: "Y"
+  ports:
+    - "1433:1433"
+
+mssql-exporter:
+  image: awaragi/prometheus-mssql-exporter:latest
+  environment:
+    SERVER: "mssqlserver"
+    USERNAME: "sa"
+    PASSWORD: "YourStrong!Passw0rd"
+  ports:
+    - "4000:4000"
+```
+
+### Métricas Disponíveis
+
+**Status:**
+- `mssql_up` - Status do SQL Server (1 = UP, 0 = DOWN)
+
+**Conexões:**
+- `mssql_connections` - Número de conexões ativas
+
+**Performance:**
+- `mssql_buffer_cache_hit_ratio` - Buffer cache hit ratio (%)
+- `mssql_page_life_expectancy` - Page Life Expectancy (segundos)
+
+**Requisições:**
+- `mssql_batch_requests` - Batch requests por segundo
+- `mssql_sql_compilations` - SQL compilations por segundo
+- `mssql_sql_recompilations` - SQL recompilations por segundo
+
+**Memória:**
+- `mssql_server_total_server_memory_bytes` - Memória total usada
+- `mssql_os_sys_memory` - Memória total do sistema
+
+**Locks e Bloqueios:**
+- `mssql_lock_waits` - Lock waits
+- `mssql_deadlocks` - Deadlocks detectados
+
+### Queries PromQL Úteis
+
+```promql
+# Buffer cache hit ratio (deve ser > 80%)
+mssql_buffer_cache_hit_ratio{job="mssql"}
+
+# Batch requests por segundo
+rate(mssql_batch_requests{job="mssql"}[1m])
+
+# Conexões ativas
+mssql_connections{job="mssql"}
+
+# Uso de memória (%)
+mssql_server_total_server_memory_bytes{job="mssql"} / mssql_os_sys_memory{job="mssql"} * 100
+
+# Deadlocks
+mssql_deadlocks{job="mssql"}
+```
+
+### Dashboard do Grafana
+
+O dashboard **SQL Server - Database Monitoring** (`mssql.json`) contém:
+
+**Primeira linha (Stats/Gauges):**
+- Status do SQL Server (UP/DOWN)
+- Conexões ativas
+- Buffer cache hit ratio (gauge 0-100%)
+- Uso de memória (%)
+- Batch requests/s
+
+**Time Series:**
+- Conexões ao longo do tempo
+- Batch requests e compilações SQL
+- Uso de memória
+- Deadlocks
+
+### Verificar Métricas
+
+```bash
+# Verificar se exporter está UP no Prometheus
+curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | select(.labels.job=="mssql")'
+
+# Ver métricas do SQL Server
+curl http://localhost:4000/metrics
+
+# Ver métricas específicas
+curl -s http://localhost:4000/metrics | grep mssql_up
+curl -s http://localhost:4000/metrics | grep mssql_buffer_cache_hit_ratio
+```
+
+### Testar com k6
+
+```bash
+# Script k6 para validar métricas do SQL Server
+k6 run tests/k6/test-mssql-metrics.js
+```
+
+**O script k6 valida:**
+- ✅ Status do SQL Server Exporter
+- ✅ Conexões
+- ✅ Buffer Cache Hit Ratio (threshold > 80%)
+- ✅ Batch Requests
+- ✅ Uso de Memória
+- ✅ Deadlocks
+
+### Troubleshooting SQL Server Monitoring
+
+**Exporter não aparece no Prometheus:**
+1. Verificar se container está rodando: `docker ps | grep mssql-exporter`
+2. Verificar logs: `docker logs mssql-exporter`
+3. Verificar conexão: `docker logs mssql-exporter | grep -i error`
+4. Testar endpoint: `curl http://localhost:4000/metrics`
+
+**Métricas zeradas ou vazias:**
+1. Verificar se SQL Server está UP: `docker logs mssqlserver`
+2. Verificar credenciais do exporter (SA_PASSWORD)
+3. Aguardar SQL Server inicializar completamente (~30s)
+
+**Dashboard vazio:**
+1. Verificar se job `mssql` está no Prometheus: `http://localhost:9090/targets`
+2. Verificar queries no Grafana (usar Query Inspector)
+3. Ajustar time range (usar últimos 30 minutos)
+
+---
+
+## 🗄️ Database Monitoring (MySQL)
+
+### MySQL Exporter
+
+O projeto usa o **MySQL Exporter** oficial (Prometheus community) para coletar métricas do MySQL.
+
+**Componentes:**
+- **mysql-exporter**: Coleta métricas do MySQL
+- **Prometheus**: Armazena métricas via scrape (porta 9104)
+- **Grafana**: Dashboard com visualizações
+
+**Configuração:**
+```yaml
+# docker-compose.yml
+mysql:
+  image: mysql:latest
+  environment:
+    MYSQL_ROOT_PASSWORD: "rootpass"
+    MYSQL_DATABASE: "observability_lab"
+    MYSQL_USER: "labuser"
+    MYSQL_PASSWORD: "labpass"
+  ports:
+    - "3306:3306"
+
+mysql-exporter:
+  image: prom/mysqld-exporter:latest
+  command:
+    - "--config.my-cnf=/etc/.my.cnf"
+  volumes:
+    - ./observability/mysql-exporter/.my.cnf:/etc/.my.cnf:ro
+  ports:
+    - "9104:9104"
+```
+
+**Arquivo de configuração (`observability/mysql-exporter/.my.cnf`):**
+```ini
+[client]
+user=labuser
+password=labpass
+host=mysql
+port=3306
+```
+
+### Métricas Disponíveis
+
+**Status:**
+- `mysql_up` - Status do MySQL (1 = UP, 0 = DOWN)
+
+**Conexões:**
+- `mysql_global_status_threads_connected` - Threads conectadas
+- `mysql_global_status_threads_running` - Threads rodando
+
+**Performance:**
+- `mysql_global_status_queries` - Total de queries
+- `mysql_global_status_questions` - Total de questions
+- `mysql_global_status_slow_queries` - Slow queries
+
+**Network:**
+- `mysql_global_status_bytes_received` - Bytes recebidos
+- `mysql_global_status_bytes_sent` - Bytes enviados
+
+**InnoDB:**
+- `mysql_global_status_innodb_data_written` - Data written
+- `mysql_global_status_innodb_data_read` - Data read
+
+**Uptime:**
+- `mysql_global_status_uptime` - Uptime em segundos
+
+### Queries PromQL Úteis
+
+```promql
+# Queries por segundo
+rate(mysql_global_status_queries{job="mysql"}[1m])
+
+# Conexões ativas
+mysql_global_status_threads_connected{job="mysql"}
+
+# Threads rodando
+mysql_global_status_threads_running{job="mysql"}
+
+# Slow queries
+mysql_global_status_slow_queries{job="mysql"}
+
+# Network throughput (bytes/s)
+rate(mysql_global_status_bytes_received{job="mysql"}[1m])
+rate(mysql_global_status_bytes_sent{job="mysql"}[1m])
+```
+
+### Dashboard do Grafana
+
+O dashboard **MySQL - Database Monitoring** (`mysql.json`) contém:
+
+**Primeira linha (Stats):**
+- Status do MySQL (UP/DOWN)
+- Conexões ativas
+- Queries/s
+- InnoDB Data Written
+- Uptime
+
+**Time Series:**
+- Conexões e threads ao longo do tempo
+- Queries por segundo
+- Network traffic
+- Slow queries
+
+### Verificar Métricas
+
+```bash
+# Verificar se exporter está UP no Prometheus
+curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | select(.labels.job=="mysql")'
+
+# Ver métricas do MySQL
+curl http://localhost:9104/metrics
+
+# Ver métricas específicas
+curl -s http://localhost:9104/metrics | grep mysql_up
+curl -s http://localhost:9104/metrics | grep mysql_global_status_threads_connected
+```
+
+### Testar com k6
+
+```bash
+# Script k6 para validar métricas do MySQL
+k6 run tests/k6/test-mysql-metrics.js
+```
+
+**O script k6 valida:**
+- ✅ Status do MySQL Exporter
+- ✅ Conexões e threads
+- ✅ Queries por segundo
+- ✅ Slow queries
+- ✅ Uptime
+
+### Troubleshooting MySQL Monitoring
+
+**Exporter não aparece no Prometheus:**
+1. Verificar se container está rodando: `docker ps | grep mysql-exporter`
+2. Verificar logs: `docker logs mysql-exporter`
+3. Verificar conexão: `docker logs mysql-exporter | grep -i error`
+4. Testar endpoint: `curl http://localhost:9104/metrics`
+
+**Métricas zeradas ou vazias:**
+1. Verificar se MySQL está UP: `docker logs mysql`
+2. Verificar credenciais do exporter (DATA_SOURCE_NAME)
+3. Aguardar MySQL inicializar completamente (~20s)
+
+**Dashboard vazio:**
+1. Verificar se job `mysql` está no Prometheus: `http://localhost:9090/targets`
+2. Verificar queries no Grafana (usar Query Inspector)
+3. Ajustar time range (usar últimos 30 minutos)
+
+---
+
 ## 🏗️ Arquitetura do Projeto
 
 ### Estrutura de Diretórios
@@ -484,6 +930,9 @@ Todos os dashboards são provisionados automaticamente em `observability/grafana
 | Next.js App | `nextjs-app.json` | Métricas específicas do Next.js |
 | Angular App | `angular-app.json` | RUM e Core Web Vitals |
 | Nginx | `nginx.json` | Métricas do Nginx |
+| PostgreSQL - Database Monitoring | `postgresql.json` | Métricas do PostgreSQL (Python API) |
+| SQL Server - Database Monitoring | `mssql.json` | Métricas do SQL Server (.NET API) |
+| MySQL - Database Monitoring | `mysql.json` | Métricas do MySQL (Java API) |
 | WSL - Monitoramento do Sistema | `linux.json` | Monitoramento do WSL (Linux rodando no Windows) |
 | HOST Windows + IIS | `windows.json` | Monitoramento do host Windows físico + IIS |
 
