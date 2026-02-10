@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 19,
+  "id": 2,
   "links": [],
   "panels": [
     {
@@ -32,6 +32,7 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -83,7 +84,9 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "count(ALERTS{alertstate=\"firing\"})",
+          "editorMode": "code",
+          "expr": "count(ALERTS{alertstate=\"firing\"}) or vector(0)",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -101,6 +104,7 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -148,7 +152,9 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "count(ALERTS{alertstate=\"firing\", severity=\"critical\"})",
+          "editorMode": "code",
+          "expr": "count(ALERTS{alertstate=\"firing\", severity=\"critical\"}) or vector(0)",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -215,7 +221,7 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "count(ALERTS{alertstate=\"firing\", severity=\"warning\"})",
+          "expr": "count(ALERTS{alertstate=\"firing\", severity=\"warning\"}) or vector(0)",
           "range": true,
           "refId": "A"
         }
@@ -234,6 +240,7 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -277,7 +284,9 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "count(ALERTS{alertstate=\"pending\"})",
+          "editorMode": "code",
+          "expr": "count(ALERTS{alertstate=\"pending\"}) or vector(0)",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -499,6 +508,7 @@
             }
           },
           "mappings": [],
+          "noValue": "Sem alertas para serem exibidos",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -592,6 +602,7 @@
             }
           },
           "mappings": [],
+          "noValue": "Sem alertas para serem exibidos",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -659,5 +670,5 @@
   "timezone": "browser",
   "title": "Alertas - Monitoramento Proativo",
   "uid": "alerts-monitoring",
-  "version": 2
+  "version": 3
 }
