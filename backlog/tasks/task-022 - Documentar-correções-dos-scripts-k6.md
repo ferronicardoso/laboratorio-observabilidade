@@ -1,9 +1,10 @@
 ---
 id: task-022
 title: Documentar correções dos scripts k6
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-09 00:57'
+updated_date: '2026-02-10 02:11'
 labels: []
 dependencies: []
 ---
@@ -27,3 +28,9 @@ Adicionar seção no README.md sobre os testes k6:
 - [ ] #3 Troubleshooting de erros comuns
 - [ ] #4 Link para visualização no Grafana
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+README.md unificado criado em tests/k6/ com documentação completa: instalação, scripts disponíveis (spike e chaos tests para .NET, Java, Python), validação de métricas, troubleshooting. Scripts shell wrapper criados para facilitar execução.
+<!-- SECTION:NOTES:END -->
