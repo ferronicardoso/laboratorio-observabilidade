@@ -769,6 +769,133 @@ k6 run tests/k6/test-mysql-metrics.js
 
 ---
 
+## 🎯 Service Level Objectives (SLOs)
+
+### O que são SLOs?
+
+**SLIs (Service Level Indicators)** são métricas que medem um aspecto específico do nível de serviço (ex: latência, disponibilidade).
+
+**SLOs (Service Level Objectives)** são targets para os SLIs (ex: "99.9% de disponibilidade").
+
+**Error Budget** é a quantidade de "erro" permitida dentro do SLO (ex: se SLO é 99.9%, o error budget é 0.1%).
+
+**Burn Rate** é a velocidade de consumo do error budget (ex: burn rate de 5x significa consumindo 5x mais rápido que o esperado).
+
+### SLOs Definidos
+
+Todos os SLOs são medidos em janela de **30 dias**:
+
+| API | SLI | Target | Descrição |
+|-----|-----|--------|-----------|
+| .NET API | Availability | ≥ 99.9% | % de requisições 2xx |
+| .NET API | Latency P95 | < 200ms | Percentil 95 do tempo de resposta |
+| .NET API | Error Rate | < 0.1% | % de requisições 5xx |
+| Python API | Availability | ≥ 99.9% | % de requisições 2xx |
+| Python API | Latency P95 | < 200ms | Percentil 95 do tempo de resposta |
+| Python API | Error Rate | < 0.1% | % de requisições 5xx |
+| Java API | Availability | ≥ 99.9% | % de requisições 2xx |
+| Java API | Latency P95 | < 200ms | Percentil 95 do tempo de resposta |
+| Java API | Error Rate | < 0.1% | % de requisições 5xx |
+
+### Dashboard de SLO
+
+O dashboard **Service Level Objectives (SLO) Dashboard** (`slo-dashboard.json`) mostra:
+
+**Primeira linha (Stat panels):**
+- Current SLI values (Availability, Latency P95, Error Rate)
+- Cores: verde (atingindo SLO), amarelo (alerta), vermelho (violando SLO)
+
+**Segunda linha (Gauges):**
+- **Error Budget Remaining** (0-100%) - quanto "erro" ainda temos disponível
+- **Burn Rate** (1h) - velocidade de consumo do error budget
+
+**Terceira linha (Time Series):**
+- **Availability Trend** - histórico de disponibilidade com linha de threshold (99.9%)
+- **Latency P95 Trend** - histórico de latência com linha de threshold (200ms)
+
+### Queries PromQL Úteis
+
+```promql
+# Availability da .NET API (últimos 5 minutos)
+sum(rate(http_server_request_duration_seconds_count{job="dotnet-api",http_response_status_code=~"2.."}[5m]))
+/
+sum(rate(http_server_request_duration_seconds_count{job="dotnet-api"}[5m])) * 100
+
+# Latency P95 da .NET API
+histogram_quantile(0.95,
+  sum(rate(http_server_request_duration_seconds_bucket{job="dotnet-api"}[5m])) by (le)
+) * 1000
+
+# Error Budget Remaining da .NET API (30 dias)
+clamp_max(
+  100 - (
+    ((sum(rate(http_server_request_duration_seconds_count{job="dotnet-api",http_response_status_code=~"5.."}[30d])) or vector(0))
+    / sum(rate(http_server_request_duration_seconds_count{job="dotnet-api"}[30d])) * 100)
+    / 0.1
+    * 100
+  ),
+  100
+)
+
+# Burn Rate da .NET API (1 hora)
+(
+  (sum(rate(http_server_request_duration_seconds_count{job="dotnet-api",http_response_status_code=~"5.."}[1h])) or vector(0))
+  /
+  sum(rate(http_server_request_duration_seconds_count{job="dotnet-api"}[1h]))
+  * 100
+) / 0.1
+```
+
+### Interpretação do Burn Rate
+
+- **Burn Rate = 1.0**: Consumindo error budget na taxa esperada (OK)
+- **Burn Rate = 5.0**: Consumindo 5x mais rápido (⚠️ ALERTA!)
+- **Burn Rate = 10.0**: Consumindo 10x mais rápido (🚨 CRÍTICO!)
+
+**Exemplo:**
+- SLO: 99.9% (error budget = 0.1% = ~43 minutos de downtime/mês)
+- Se burn rate = 10x por 1 hora, em ~3 dias todo o budget mensal seria consumido
+- Ação: Investigar imediatamente e resolver problemas antes de esgotar o budget
+
+### Alertas Recomendados
+
+**Alerta Critical - Burn Rate Alto:**
+```yaml
+alert: HighBurnRate
+expr: |
+  (
+    sum(rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[1h]))
+    /
+    sum(rate(http_server_request_duration_seconds_count[1h]))
+  ) > (0.001 * 10)  # 0.1% * 10 = 1%
+for: 1h
+labels:
+  severity: critical
+annotations:
+  summary: "Error budget consumindo 10x mais rápido que o esperado"
+```
+
+**Alerta Warning - Error Budget Baixo:**
+```yaml
+alert: LowErrorBudget
+expr: error_budget_remaining < 10
+for: 5m
+labels:
+  severity: warning
+annotations:
+  summary: "Error budget < 10% restante"
+```
+
+### Documentação Completa
+
+Ver `docs/slo.md` para documentação detalhada sobre:
+- Conceitos de SLI/SLO/Error Budget/Burn Rate
+- Queries PromQL para cada API
+- Interpretação dos valores
+- Referências do Google SRE Book
+
+---
+
 ## 🏗️ Arquitetura do Projeto
 
 ### Estrutura de Diretórios

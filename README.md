@@ -532,7 +532,7 @@ k6 run --vus 50 --duration 2m tests/k6/test-dotnet-api.js
 
 💡 **Dica:** Abra o Grafana antes de executar os testes para ver as métricas em tempo real!
 
-📚 **Documentação completa:** [`tests/k6/README.md`](tests/k6/README.md)
+📚 **Documentação completa:** [`docs/k6.md`](docs/k6.md)
 
 ### 4. Consultar Métricas no Grafana
 
