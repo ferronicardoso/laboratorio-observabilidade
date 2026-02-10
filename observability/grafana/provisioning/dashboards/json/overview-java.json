@@ -253,12 +253,12 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by(le) (rate(http_server_requests_seconds_bucket{job=\"java-api\"}[5m]))) * 1000",
+          "expr": "(sum(rate(http_server_requests_seconds_sum{job=\"java-api\"}[5m])) / sum(rate(http_server_requests_seconds_count{job=\"java-api\"}[5m]))) * 1000",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Latência P95",
+      "title": "Latência Média",
       "type": "stat"
     },
     {
@@ -397,12 +397,12 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "hikaricp_connections_active{job=\"java-api\"} or on() vector(0)",
+          "expr": "sum(hikaricp_connections_active{job=\"java-api\"}) or on() vector(0)",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Conexões DB",
+      "title": "Conexões DB Ativas",
       "type": "stat"
     },
     {
@@ -579,6 +579,7 @@
           },
           "editorMode": "code",
           "expr": "(jvm_memory_used_bytes{job=\"java-api\",area=\"heap\"} / jvm_memory_max_bytes{job=\"java-api\",area=\"heap\"}) * 100",
+          "legendFormat": "{{id}}",
           "range": true,
           "refId": "A"
         }
@@ -871,13 +872,13 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum by(level) (count_over_time({container=\"java-api\"} | json | __error__=\"\" [1m]))",
-          "legendFormat": "{{level}}",
+          "expr": "sum by(status) (count_over_time({container=\"java-api\"} | regexp `\"(?P<method>\\w+) (?P<uri>\\S+) \\S+\" (?P<status>\\d+)` | status != \"\" [1m]))",
+          "legendFormat": "HTTP {{status}}",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Logs por Nível",
+      "title": "Logs por Status HTTP",
       "type": "barchart"
     },
     {
