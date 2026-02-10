@@ -18,6 +18,15 @@ export const options = {
 const BASE_URL = 'http://localhost:5000';
 
 export default function () {
+  // Teste do endpoint Health
+  let healthRes = http.get(`${BASE_URL}/health`);
+  check(healthRes, {
+    'health status is 200': (r) => r.status === 200,
+    'health status is UP': (r) => r.json('status') === 'UP',
+  }) || errorRate.add(1);
+
+  sleep(1);
+
   // Teste do endpoint WeatherForecast
   let weatherRes = http.get(`${BASE_URL}/weatherforecast`);
   check(weatherRes, {

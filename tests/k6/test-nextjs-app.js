@@ -17,10 +17,10 @@ const BASE_URL = 'http://localhost:3001';
 
 export default function () {
   // Teste do endpoint health
-  let healthRes = http.get(`${BASE_URL}/api/health`);
+  let healthRes = http.get(`${BASE_URL}/health`);
   check(healthRes, {
     'health status is 200': (r) => r.status === 200,
-    'health status is healthy': (r) => r.json('status') === 'healthy',
+    'health status is UP': (r) => r.json('status') === 'UP',
   }) || errorRate.add(1);
 
   sleep(1);

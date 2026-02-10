@@ -1,9 +1,11 @@
 ---
 id: task-020
 title: Criar dashboard Database Performance
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-02-09 00:56'
+updated_date: '2026-02-10 17:12'
 labels: []
 dependencies: []
 ---
@@ -23,8 +25,8 @@ Dashboard deep dive em performance de SQL:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Dashboard criado focado em database
-- [ ] #2 Top slow queries visível
-- [ ] #3 Métricas de connection pool
-- [ ] #4 Correlação query → endpoint
+- [x] #1 Dashboard criado focado em database
+- [x] #2 Top slow queries visível
+- [x] #3 Métricas de connection pool
+- [x] #4 Correlação query → endpoint
 <!-- AC:END -->

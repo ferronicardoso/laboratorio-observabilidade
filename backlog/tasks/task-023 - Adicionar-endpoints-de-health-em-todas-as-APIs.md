@@ -1,9 +1,11 @@
 ---
 id: task-023
 title: Adicionar endpoints de health em todas as APIs
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-02-09 00:57'
+updated_date: '2026-02-10 17:54'
 labels: []
 dependencies: []
 ---
@@ -24,8 +26,14 @@ Todos devem retornar JSON: {"status": "UP", "timestamp": "..."}
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Endpoint /health em todas as APIs
-- [ ] #2 Formato JSON padronizado
-- [ ] #3 Scripts k6 atualizados para usar /health
-- [ ] #4 Testes passando sem erros
+- [x] #1 Endpoint /health em todas as APIs
+- [x] #2 Formato JSON padronizado
+- [x] #3 Scripts k6 atualizados para usar /health
+- [x] #4 Testes passando sem erros
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Endpoints /health padronizados criados em todas as APIs: .NET (/health), Python (/health), Java (/actuator/health - padrão Spring Boot), Next.js (/health), Nginx (/health). Scripts k6 atualizados e testados com 100% de checks passando.
+<!-- SECTION:NOTES:END -->

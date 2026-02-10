@@ -148,6 +148,18 @@ var summaries = new[]
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
+// Endpoint de health check
+app.MapGet("/health", () =>
+{
+    return Results.Ok(new
+    {
+        status = "UP",
+        timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+        service = "dotnet-api"
+    });
+})
+.WithName("HealthCheck");
+
 app.MapGet("/weatherforecast", () =>
 {
     var forecast =  Enumerable.Range(1, 5).Select(index =>
