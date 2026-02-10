@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Console Appender com JSON encoder -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <!-- Adicionar campos customizados -->
+            <customFields>{"service":"java-api"}</customFields>
+
+            <!-- Incluir campos do MDC (trace_id, span_id) -->
+            <includeMdcKeyName>trace_id</includeMdcKeyName>
+            <includeMdcKeyName>span_id</includeMdcKeyName>
+
+            <!-- Incluir campos HTTP -->
+            <includeMdcKeyName>http_method</includeMdcKeyName>
+            <includeMdcKeyName>http_path</includeMdcKeyName>
+            <includeMdcKeyName>http_status_code</includeMdcKeyName>
+            <includeMdcKeyName>http_duration_ms</includeMdcKeyName>
+
+            <!-- Provider padrão de campos -->
+            <provider class="net.logstash.logback.composite.loggingevent.LoggingEventPatternJsonProvider">
+                <pattern>
+                    {
+                        "timestamp": "%date{ISO8601}",
+                        "level": "%level",
+                        "logger": "%logger{36}",
+                        "thread": "%thread",
+                        "message": "%message"
+                    }
+                </pattern>
+            </provider>
+        </encoder>
+    </appender>
+
+    <!-- Root logger -->
+    <root level="INFO">
+        <appender-ref ref="JSON_CONSOLE" />
+    </root>
+
+    <!-- Desabilitar logs verbosos do Tomcat -->
+    <logger name="org.apache.catalina" level="WARN"/>
+    <logger name="org.apache.tomcat" level="WARN"/>
+
+    <!-- Desabilitar logs verbosos do Hibernate -->
+    <logger name="org.hibernate" level="WARN"/>
+
+    <!-- Logs da aplicação -->
+    <logger name="com.observability.api" level="INFO"/>
+</configuration>

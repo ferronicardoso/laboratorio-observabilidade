@@ -24,7 +24,7 @@ export default function () {
   // Mix de endpoints para simular carga realista
   const endpoints = [
     `${BASE_URL}/items`,
-    `${BASE_URL}/items/${Math.floor(Math.random() * 100) + 1}`,
+    `${BASE_URL}/items/${Math.floor(Math.random() * 10) + 1}`,
     `${BASE_URL}/users`,
     `${BASE_URL}/health`,
   ];

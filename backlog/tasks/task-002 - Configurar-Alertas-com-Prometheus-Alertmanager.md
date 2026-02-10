@@ -1,9 +1,11 @@
 ---
 id: task-002
 title: Configurar Alertas com Prometheus Alertmanager
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-02-08 02:01'
+updated_date: '2026-02-10 14:47'
 labels:
   - observability
   - alerting
@@ -19,8 +21,8 @@ Implementar sistema de alertas para notificar sobre problemas de forma proativa.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Alertmanager instalado e configurado no docker-compose
-- [ ] #2 Regras de alerta criadas para métricas críticas (CPU, memória, latência, erro rate)
-- [ ] #3 Integração com canal de notificação configurada (Slack, Email ou Webhook)
-- [ ] #4 Alertas testados e funcionando
+- [x] #1 Alertmanager instalado e configurado no docker-compose
+- [x] #2 Regras de alerta criadas para métricas críticas (CPU, memória, latência, erro rate)
+- [x] #3 Integração com canal de notificação configurada (Slack, Email ou Webhook)
+- [x] #4 Alertas testados e funcionando
 <!-- AC:END -->

@@ -23,7 +23,7 @@ export default function () {
   // Requisições SEM think time - máxima agressividade
   const endpoints = [
     `${BASE_URL}/items`,
-    `${BASE_URL}/items/${Math.floor(Math.random() * 100) + 1}`,
+    `${BASE_URL}/items/${Math.floor(Math.random() * 10) + 1}`,
     `${BASE_URL}/users`,
   ];
 

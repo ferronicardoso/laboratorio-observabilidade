@@ -12,7 +12,9 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from prometheus_client import start_http_server
+from pythonjsonlogger import jsonlogger
 import logging
+import sys
 import os
 
 logger = logging.getLogger(__name__)
@@ -99,3 +101,29 @@ def instrument_app(app):
 def get_meter(name: str, version: str = "1.0.0"):
     """Obter meter para criar métricas customizadas"""
     return metrics.get_meter(name, version)
+
+def setup_json_logging():
+    """Configurar logging estruturado em JSON"""
+    try:
+        # Criar handler para stdout
+        log_handler = logging.StreamHandler(sys.stdout)
+
+        # Criar formatter JSON (sem formato customizado)
+        formatter = jsonlogger.JsonFormatter()
+
+        log_handler.setFormatter(formatter)
+
+        # Configurar root logger
+        root_logger = logging.getLogger()
+        root_logger.handlers = []  # Remover handlers existentes
+        root_logger.addHandler(log_handler)
+        root_logger.setLevel(logging.INFO)
+
+        # Desabilitar logs do uvicorn (access logs)
+        logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+        logging.getLogger("uvicorn.access").propagate = False
+
+        print("✅ Logging estruturado JSON configurado")
+    except Exception as e:
+        print(f"❌ Erro ao configurar logging JSON: {e}")
+        raise

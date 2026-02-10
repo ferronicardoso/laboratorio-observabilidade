@@ -943,8 +943,8 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum by(status) (count_over_time({container=\"python-api\"} | pattern `<_> \"<_> <_> <_>\" <status> <_>` | status != \"\" [1m]))",
-          "legendFormat": "HTTP {{status}}",
+          "expr": "sum by(http_status_code) (count_over_time({container=\"python-api\"} | json | http_status_code != \"\" [1m]))",
+          "legendFormat": "HTTP {{http_status_code}}",
           "queryType": "range",
           "refId": "A"
         }
@@ -1009,12 +1009,12 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "{container=\"python-api\"} |~ \"(?i)(error|exception|fail|traceback)\"",
+          "expr": "{container=\"python-api\"} | json | http_status_code >= 400",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Erros e Exceções (Logs)",
+      "title": "Erros HTTP (4xx e 5xx)",
       "type": "table"
     },
     {

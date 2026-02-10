@@ -13,12 +13,12 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 256M
+          cpus: '2'
+          memory: 1G
         reservations:
-          cpus: '0.25'
-          memory: 128M
-
+          cpus: '0.5'
+          memory: 512M
+  
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:latest
     container_name: nginx-exporter
@@ -30,14 +30,14 @@ services:
       - obs-net
     depends_on:
       - nginx
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '0.25'
-    #       memory: 128M
-    #     reservations:
-    #       cpus: '0.1'
-    #       memory: 64M
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
 
   dotnet-api:
     build:
@@ -84,11 +84,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1'
-          memory: 512M
+          cpus: '2'
+          memory: 1G
         reservations:
-          cpus: '0.25'
-          memory: 256M
+          cpus: '0.5'
+          memory: 512M
 
   java-api:
     build:
@@ -154,11 +154,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 256M
+          cpus: '1'
+          memory: 512M
         reservations:
           cpus: '0.25'
-          memory: 128M
+          memory: 256M
 
   prometheus:
     image: prom/prometheus:latest
@@ -169,19 +169,64 @@ services:
       - '--web.enable-remote-write-receiver'
     volumes:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./observability/prometheus/alerts:/etc/prometheus/alerts
       - prometheus-data:/prometheus
     ports:
       - "9090:9090"
     networks:
       - obs-net
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '2'
-    #       memory: 2G
-    #     reservations:
-    #       cpus: '0.5'
-    #       memory: 512M
+    depends_on:
+      - alertmanager
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    volumes:
+      - ./observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager-data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - obs-net
+    depends_on:
+      - webhook-receiver
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  webhook-receiver:
+    build:
+      context: ./apps/webhook-receiver
+      dockerfile: Dockerfile
+    container_name: webhook-receiver
+    ports:
+      - "5001:5001"
+    networks:
+      - obs-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   loki:
     image: grafana/loki:latest
@@ -195,14 +240,14 @@ services:
       - "3100:3100"
     networks:
       - obs-net
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '1'
-    #       memory: 1G
-    #     reservations:
-    #       cpus: '0.25'
-    #       memory: 256M
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   tempo-init:
     image: alpine:latest
@@ -227,14 +272,14 @@ services:
     restart: unless-stopped
     depends_on:
       - tempo-init
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '1'
-    #       memory: 512M
-    #     reservations:
-    #       cpus: '0.25'
-    #       memory: 256M
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   alloy:
     image: grafana/alloy:latest
@@ -256,14 +301,14 @@ services:
     depends_on:
       - loki
       - tempo
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '1'
-    #       memory: 512M
-    #     reservations:
-    #       cpus: '0.25'
-    #       memory: 256M
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   grafana:
     image: grafana/grafana:latest
@@ -282,14 +327,14 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     networks:
       - obs-net
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '1'
-    #       memory: 512M
-    #     reservations:
-    #       cpus: '0.25'
-    #       memory: 256M
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   node-exporter-linux:
     image: prom/node-exporter:latest
@@ -309,14 +354,14 @@ services:
     networks:
       - obs-net
     restart: unless-stopped
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '0.5'
-    #       memory: 256M
-    #     reservations:
-    #       cpus: '0.1'
-    #       memory: 128M
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
 
   postgres:
     image: postgres:18-alpine
@@ -341,10 +386,10 @@ services:
       resources:
         limits:
           cpus: '2'
-          memory: 1G
+          memory: 2G
         reservations:
           cpus: '0.5'
-          memory: 512M
+          memory: 1G
 
   postgres-exporter:
     image: quay.io/prometheuscommunity/postgres-exporter:latest
@@ -359,14 +404,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '0.25'
-    #       memory: 128M
-    #     reservations:
-    #       cpus: '0.1'
-    #       memory: 64M
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
 
   mssqlserver:
     image: mcr.microsoft.com/mssql/server:2019-latest
@@ -413,14 +458,14 @@ services:
     depends_on:
       mssqlserver:
         condition: service_healthy
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '0.25'
-    #       memory: 128M
-    #     reservations:
-    #       cpus: '0.1'
-    #       memory: 64M
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
 
   mysql:
     image: mysql:latest
@@ -446,10 +491,10 @@ services:
       resources:
         limits:
           cpus: '2'
-          memory: 1G
+          memory: 2G
         reservations:
           cpus: '0.5'
-          memory: 512M
+          memory: 1G
 
   mysql-exporter:
     image: prom/mysqld-exporter:latest
@@ -466,14 +511,14 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '0.25'
-    #       memory: 128M
-    #     reservations:
-    #       cpus: '0.1'
-    #       memory: 64M
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
 
 networks:
   obs-net:
@@ -484,6 +529,7 @@ volumes:
   loki-wal:
   tempo-data:
   prometheus-data:
+  alertmanager-data:
   postgres-data:
   mssqlserver-data:
   mysql-data:

@@ -1,0 +1,241 @@
+groups:
+  - name: api_alerts
+    interval: 30s
+    rules:
+      # ========================================
+      # ALERTAS DE DISPONIBILIDADE
+      # ========================================
+
+      - alert: ServiceDown
+        expr: up{job=~"dotnet-api|python-api|java-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "Serviço {{ $labels.job }} está DOWN"
+          description: "O serviço {{ $labels.job }} (instância {{ $labels.instance }}) está inacessível há mais de 1 minuto."
+
+      - alert: NginxDown
+        expr: up{job="nginx"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: proxy
+        annotations:
+          summary: "Nginx está DOWN"
+          description: "O Nginx está inacessível há mais de 1 minuto. Isso afeta todas as aplicações."
+
+      # ========================================
+      # ALERTAS DE ERROR RATE
+      # ========================================
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_server_request_duration_seconds_count{job="dotnet-api",http_response_status_code=~"5.."}[5m]))
+            /
+            sum(rate(http_server_request_duration_seconds_count{job="dotnet-api"}[5m]))
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+          service: dotnet-api
+        annotations:
+          summary: "Alta taxa de erros 5xx na .NET API"
+          description: "Taxa de erros 5xx acima de 5% nos últimos 5 minutos: {{ $value | humanizePercentage }}"
+
+      - alert: High4xxRate
+        expr: |
+          (
+            sum(rate(http_server_request_duration_seconds_count{job="dotnet-api",http_response_status_code=~"4.."}[5m]))
+            /
+            sum(rate(http_server_request_duration_seconds_count{job="dotnet-api"}[5m]))
+          ) > 0.20
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+          service: dotnet-api
+        annotations:
+          summary: "Alta taxa de erros 4xx na .NET API"
+          description: "Taxa de erros 4xx acima de 20% nos últimos 5 minutos: {{ $value | humanizePercentage }}"
+
+      # ========================================
+      # ALERTAS DE LATÊNCIA
+      # ========================================
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_request_duration_seconds_bucket{job="dotnet-api"}[5m])) by (le, job)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+          service: dotnet-api
+        annotations:
+          summary: "Latência P95 alta na .NET API"
+          description: "Latência P95 acima de 1s nos últimos 5 minutos: {{ $value | humanizeDuration }}"
+
+      - alert: VeryHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_request_duration_seconds_bucket{job="dotnet-api"}[5m])) by (le, job)
+          ) > 5
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+          service: dotnet-api
+        annotations:
+          summary: "Latência P95 CRÍTICA na .NET API"
+          description: "Latência P95 acima de 5s nos últimos 5 minutos: {{ $value | humanizeDuration }}"
+
+  - name: host_alerts
+    interval: 30s
+    rules:
+      # ========================================
+      # ALERTAS DE CPU
+      # ========================================
+
+      - alert: HighCPUUsage
+        expr: |
+          100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle",job="node-exporter-linux"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: host
+        annotations:
+          summary: "Uso de CPU alto no host {{ $labels.instance }}"
+          description: "CPU acima de 80% nos últimos 5 minutos: {{ $value | humanize }}%"
+
+      - alert: CriticalCPUUsage
+        expr: |
+          100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle",job="node-exporter-linux"}[5m])) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+          component: host
+        annotations:
+          summary: "Uso de CPU CRÍTICO no host {{ $labels.instance }}"
+          description: "CPU acima de 95% nos últimos 2 minutos: {{ $value | humanize }}%"
+
+      # ========================================
+      # ALERTAS DE MEMÓRIA
+      # ========================================
+
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes{job="node-exporter-linux"} / node_memory_MemTotal_bytes{job="node-exporter-linux"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: host
+        annotations:
+          summary: "Uso de memória alto no host {{ $labels.instance }}"
+          description: "Memória acima de 85% nos últimos 5 minutos: {{ $value | humanize }}%"
+
+      - alert: CriticalMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes{job="node-exporter-linux"} / node_memory_MemTotal_bytes{job="node-exporter-linux"})) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          component: host
+        annotations:
+          summary: "Uso de memória CRÍTICO no host {{ $labels.instance }}"
+          description: "Memória acima de 95% nos últimos 2 minutos: {{ $value | humanize }}%"
+
+      # ========================================
+      # ALERTAS DE DISCO
+      # ========================================
+
+      - alert: HighDiskUsage
+        expr: |
+          (1 - (node_filesystem_avail_bytes{job="node-exporter-linux",fstype!~"tmpfs|fuse.*"} / node_filesystem_size_bytes{job="node-exporter-linux",fstype!~"tmpfs|fuse.*"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: host
+        annotations:
+          summary: "Uso de disco alto no host {{ $labels.instance }}"
+          description: "Disco {{ $labels.mountpoint }} acima de 85%: {{ $value | humanize }}%"
+
+  - name: database_alerts
+    interval: 30s
+    rules:
+      # ========================================
+      # ALERTAS DE DATABASES
+      # ========================================
+
+      - alert: PostgreSQLDown
+        expr: pg_up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+          database: postgresql
+        annotations:
+          summary: "PostgreSQL está DOWN"
+          description: "PostgreSQL está inacessível há mais de 1 minuto."
+
+      - alert: MySQLDown
+        expr: mysql_up{job="mysql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+          database: mysql
+        annotations:
+          summary: "MySQL está DOWN"
+          description: "MySQL está inacessível há mais de 1 minuto."
+
+      - alert: SQLServerDown
+        expr: mssql_up{job="mssql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+          database: sqlserver
+        annotations:
+          summary: "SQL Server está DOWN"
+          description: "SQL Server está inacessível há mais de 1 minuto."
+
+      - alert: PostgreSQLLowCacheHitRatio
+        expr: |
+          sum(pg_stat_database_blks_hit{datname="observability_lab"}) /
+          (sum(pg_stat_database_blks_hit{datname="observability_lab"}) +
+           sum(pg_stat_database_blks_read{datname="observability_lab"})) * 100 < 90
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+          database: postgresql
+        annotations:
+          summary: "Cache hit ratio baixo no PostgreSQL"
+          description: "Cache hit ratio abaixo de 90%: {{ $value | humanize }}%"
+
+      - alert: PostgreSQLTooManyConnections
+        expr: sum(pg_stat_activity_count) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+          database: postgresql
+        annotations:
+          summary: "Muitas conexões no PostgreSQL"
+          description: "Número de conexões acima de 80: {{ $value | humanize }}"
+
+      - alert: PostgreSQLDeadlocks
+        expr: rate(pg_stat_database_deadlocks{datname="observability_lab"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          component: database
+          database: postgresql
+        annotations:
+          summary: "Deadlocks detectados no PostgreSQL"
+          description: "Taxa de deadlocks: {{ $value | humanize }} por segundo"

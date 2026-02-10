@@ -1,0 +1,62 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  # Roteamento padrão para todos os alertas
+  receiver: 'default-receiver'
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+
+  routes:
+    # Rota para alertas críticos
+    - match:
+        severity: critical
+      receiver: 'critical-receiver'
+      group_wait: 5s
+      repeat_interval: 5m
+
+    # Rota para alertas de warning
+    - match:
+        severity: warning
+      receiver: 'warning-receiver'
+      group_wait: 10s
+      repeat_interval: 30m
+
+receivers:
+  # Receptor padrão (logs no console via webhook-receiver)
+  - name: 'default-receiver'
+    webhook_configs:
+      - url: 'http://webhook-receiver:5001/webhook'
+        send_resolved: true
+
+  # Receptor para alertas críticos
+  - name: 'critical-receiver'
+    webhook_configs:
+      - url: 'http://webhook-receiver:5001/webhook/critical'
+        send_resolved: true
+
+  # Receptor para warnings
+  - name: 'warning-receiver'
+    webhook_configs:
+      - url: 'http://webhook-receiver:5001/webhook/warning'
+        send_resolved: true
+
+# Inibição: não enviar alertas redundantes
+inhibit_rules:
+  # Se o serviço está DOWN, não alertar sobre latência ou erro rate
+  - source_match:
+      severity: 'critical'
+      alertname: 'ServiceDown'
+    target_match:
+      severity: 'warning'
+    equal: ['service']
+
+  # Se host está DOWN, não alertar sobre CPU/memória
+  - source_match:
+      severity: 'critical'
+      alertname: 'HostDown'
+    target_match:
+      severity: 'warning'
+    equal: ['instance']
