@@ -5,75 +5,70 @@ global:
 # Configuração do Alertmanager
 alerting:
   alertmanagers:
-    - static_configs:
-        - targets: ['alertmanager:9093']
+  - static_configs:
+    - targets: [ 'alertmanager:9093' ]
 
 # Carregar regras de alerta
 rule_files:
-  - '/etc/prometheus/alerts/*.yml'
+- '/etc/prometheus/alerts/*.yml'
 
 scrape_configs:
-  # Prometheus monitora ele mesmo
-  - job_name: prometheus
-    static_configs:
-      - targets: ["prometheus:9090"]
-    metrics_path: '/metrics'
+# Prometheus monitora ele mesmo
+- job_name: prometheus
+  static_configs:
+  - targets: [ "prometheus:9090" ]
+  metrics_path: '/metrics'
 
-  # Métricas do Nginx via exporter
-  - job_name: nginx
-    static_configs:
-      - targets: ["nginx-exporter:9113"]
-    metrics_path: '/metrics'
+# Métricas do Nginx via exporter
+- job_name: nginx
+  static_configs:
+  - targets: [ "nginx-exporter:9113" ]
+  metrics_path: '/metrics'
 
-  # Métricas da API .NET com OpenTelemetry
-  - job_name: dotnet-api
-    static_configs:
-      - targets: ["dotnet-api:8080"]
-    metrics_path: '/metrics'
+# Métricas da API .NET com OpenTelemetry
+- job_name: dotnet-api
+  static_configs:
+  - targets: [ "dotnet-api:8080" ]
+  metrics_path: '/metrics'
 
-  # Métricas da API Python (FastAPI) com OpenTelemetry
-  - job_name: python-api
-    static_configs:
-      - targets: ["python-api:8000"]
-    metrics_path: '/metrics'
+# Métricas da API Python (FastAPI) com OpenTelemetry
+- job_name: python-api
+  static_configs:
+  - targets: [ "python-api:8000" ]
+  metrics_path: '/metrics'
 
-  # Métricas da API Java (Spring Boot) com Micrometer
-  - job_name: java-api
-    static_configs:
-      - targets: ["java-api:8080"]
-    metrics_path: '/actuator/prometheus'
+# Métricas da API Java (Spring Boot) com Micrometer
+- job_name: java-api
+  static_configs:
+  - targets: [ "java-api:8080" ]
+  metrics_path: '/actuator/prometheus'
 
-  # Métricas do Next.js com prom-client
-  - job_name: nextjs-app
-    static_configs:
-      - targets: ["nextjs-app:3000"]
-    metrics_path: '/api/metrics'
+# Métricas do Next.js com prom-client
+- job_name: nextjs-app
+  static_configs:
+  - targets: [ "nextjs-app:3000" ]
+  metrics_path: '/api/metrics'
 
-  # Métricas do host (Node Exporter)
-  - job_name: node-exporter-linux
-    static_configs:
-      - targets: ["node-exporter-linux:9100"]
-    metrics_path: '/metrics'
+# Métricas do host (Node Exporter)
+- job_name: node-exporter-linux
+  static_configs:
+  - targets: [ "node-exporter-linux:9100" ]
+  metrics_path: '/metrics'
 
-  - job_name: node-exporter-windows
-    static_configs:
-      - targets: ["node-exporter-windows:9182"]
-    metrics_path: '/metrics'
+# Métricas do PostgreSQL
+- job_name: postgres
+  static_configs:
+  - targets: [ "postgres-exporter:9187" ]
+  metrics_path: '/metrics'
 
-  # Métricas do PostgreSQL
-  - job_name: postgres
-    static_configs:
-      - targets: ["postgres-exporter:9187"]
-    metrics_path: '/metrics'
+# Métricas do SQL Server
+- job_name: mssql
+  static_configs:
+  - targets: [ "mssql-exporter:4000" ]
+  metrics_path: '/metrics'
 
-  # Métricas do SQL Server
-  - job_name: mssql
-    static_configs:
-      - targets: ["mssql-exporter:4000"]
-    metrics_path: '/metrics'
-
-  # Métricas do MySQL
-  - job_name: mysql
-    static_configs:
-      - targets: ["mysql-exporter:9104"]
-    metrics_path: '/metrics'
+# Métricas do MySQL
+- job_name: mysql
+  static_configs:
+  - targets: [ "mysql-exporter:9104" ]
+  metrics_path: '/metrics'
